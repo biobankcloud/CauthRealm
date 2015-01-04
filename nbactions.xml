@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+        <action>
+            <actionName>CUSTOM-assemble</actionName>
+            <displayName>assemble</displayName>
+            <goals>
+                <goal>assembly:assembly</goal>
+            </goals>
+            <properties>
+                <skipTests>true</skipTests>
+            </properties>
+        </action>
+        <action>
+            <actionName>CUSTOM-cauth</actionName>
+            <displayName>cauth</displayName>
+            <goals>
+                <goal>assembly:assembly</goal>
+            </goals>
+            <properties>
+                <skipTests>true</skipTests>
+            </properties>
+        </action>
+    </actions>
