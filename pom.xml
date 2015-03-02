@@ -8,7 +8,7 @@
     <packaging>jar</packaging>
         
     <properties>
-        <glassfish.version>3.1.2.2</glassfish.version>
+        <glassfish.version>4.1</glassfish.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
@@ -36,7 +36,7 @@
         <dependency>
             <groupId>org.glassfish.main.security</groupId>
             <artifactId>security</artifactId>
-            <version>3.1.2.2</version>
+            <version>4.1</version>
             <scope>provided</scope>            
         </dependency>
 
@@ -126,6 +126,12 @@
             <version>2.5.2</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+                <groupId>org.glassfish.main.connectors</groupId>
+                <artifactId>connectors-runtime</artifactId>
+                <version>4.1</version>
+        </dependency>
+
     </dependencies>
 
     <build>

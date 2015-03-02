@@ -10,12 +10,14 @@ import com.sun.enterprise.security.auth.realm.NoSuchRealmException;
 import com.sun.enterprise.security.auth.realm.NoSuchUserException;
 import com.sun.enterprise.security.common.Util;
 import com.sun.enterprise.universal.GFBase64Encoder;
+import com.sun.enterprise.util.Utility;
 import com.yubico.base.Pof;
 import com.yubico.base.Token;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
@@ -42,6 +44,8 @@ import javax.security.auth.login.LoginException;
 import org.jvnet.hk2.annotations.Service;
 import javax.sql.DataSource;
 import org.apache.commons.codec.binary.Base32;
+import org.glassfish.hk2.api.ActiveDescriptor;
+import org.glassfish.hk2.utilities.BuilderHelper;
 
 /**
  *
@@ -114,7 +118,9 @@ public class CustomAuthRealm extends AppservRealm {
     private String selectYubikey = null;
     private MessageDigest md = null;
     Properties prop = null;
-    private ConnectorRuntime cr;
+   
+        private ActiveDescriptor<ConnectorRuntime> cr;
+
 
     @Override
     public String getAuthType() {
@@ -122,6 +128,7 @@ public class CustomAuthRealm extends AppservRealm {
     }
 
     public String[] authenticate(String username, String password) {
+    
         String[] groups = null;
         // make a yubikey check
         if (password.endsWith(YUBIKEY_USER_MARKER)) {
@@ -161,6 +168,7 @@ public class CustomAuthRealm extends AppservRealm {
         String userActiveColumn = props.getProperty(PARAM_USER_STATUS);
         String yubikeyTable = props.getProperty(PARAM_YUBIKEY_TABLE);
 
+        
         /*
          String yubikeyId = props.getProperty(PARAM_YUBIKEY_ID_COLUMN);
          String yubikeyStatus = props.getProperty(PARAM_YUBIKEY_STATUS);
@@ -171,7 +179,9 @@ public class CustomAuthRealm extends AppservRealm {
          String yubikeySessionUse = props.getProperty(PARAM_YUBIKEY_SESSION_COLUMN);
          String yubikeySessionCounter = props.getProperty(PARAM_YUBIKEY_COUNTER_COLUMN);
          */
-        cr = Util.getDefaultHabitat().getByContract(ConnectorRuntime.class);
+     	cr = (ActiveDescriptor<ConnectorRuntime>)
+                Util.getDefaultHabitat().getBestDescriptor(BuilderHelper.createContractFilter(ConnectorRuntime.class.getName()));
+
 
         // load the properties to enable/disable the realm
         prop = new Properties();
@@ -267,6 +277,7 @@ public class CustomAuthRealm extends AppservRealm {
 
         groupCache = new HashMap<String, Vector>();
         emptyVector = new Vector<String>();
+    
     }
 
     private void close(Connection conn, PreparedStatement stmt,
@@ -303,8 +314,10 @@ public class CustomAuthRealm extends AppservRealm {
              //V3 Commented (DataSource)ConnectorRuntime.getRuntime().lookupNonTxResource(dsJndi,false);
              //replacement code suggested by jagadish
              (DataSource)ic.lookup(nonTxJndiName);*/
-            final DataSource dataSource
-                    = (DataSource) cr.lookupNonTxResource(dsJndi, false);
+   ConnectorRuntime connectorRuntime = Util.getDefaultHabitat().getServiceHandle(cr).getService();
+            final DataSource dataSource =
+                (DataSource) connectorRuntime.lookupNonTxResource(dsJndi,false);
+            
             //(DataSource)ConnectorRuntime.getRuntime().lookupNonTxResource(dsJndi,false);
             Connection connection = null;
             connection = dataSource.getConnection();
@@ -315,20 +328,20 @@ public class CustomAuthRealm extends AppservRealm {
             loginEx.initCause(ex);
             throw loginEx;
         }
+    
     }
 
-    private String hashPassword(String password)
-            throws UnsupportedEncodingException {
-        String result = null;
+
+     private String hashPassword( String password)
+            throws CharacterCodingException {
+        char [] pass = password.toCharArray();
         byte[] bytes = null;
+        char[] result = null;
         String charSet = getProperty(PARAM_CHARSET);
-        if (charSet != null) {
-            bytes = password.getBytes(charSet);
-        } else {
-            bytes = password.getBytes();
-        }
+        bytes = Utility.convertCharArrayToByteArray(pass, charSet);
+
         if (md != null) {
-            synchronized (md) {
+            synchronized(md) {
                 md.reset();
                 bytes = md.digest(bytes);
             }
@@ -338,14 +351,14 @@ public class CustomAuthRealm extends AppservRealm {
         if (HEX.equalsIgnoreCase(encoding)) {
             result = hexEncode(bytes);
         } else if (BASE64.equalsIgnoreCase(encoding)) {
-            result = base64Encode(bytes);
-        } else { // no encoding specified
-            result = new String(bytes);
+            result = base64Encode(bytes).toCharArray();
+        } else { // no encoding specified                                                                                                                                
+            result = Utility.convertByteArrayToCharArray(bytes, charSet);
         }
-        return result;
-    }
-
-    private String hexEncode(byte[] bytes) {
+        return String.valueOf(result);
+     }        
+    
+    private char[] hexEncode(byte[] bytes) {
         StringBuilder sb = new StringBuilder(2 * bytes.length);
         for (int i = 0; i < bytes.length; i++) {
             int low = (int) (bytes[i] & 0x0f);
@@ -353,8 +366,11 @@ public class CustomAuthRealm extends AppservRealm {
             sb.append(HEXADECIMAL[high]);
             sb.append(HEXADECIMAL[low]);
         }
-        return sb.toString();
+        char[] result = new char[sb.length()];
+        sb.getChars(0, sb.length(), result, 0);
+        return result;
     }
+
 
     private String base64Encode(byte[] bytes) {
         GFBase64Encoder encoder = new GFBase64Encoder();
@@ -431,7 +447,8 @@ public class CustomAuthRealm extends AppservRealm {
         Connection connection = null;
         PreparedStatement statement = null;
         ResultSet rs = null;
-        boolean valid = false;
+       
+        boolean valid = true;
 
         try {
 
@@ -457,6 +474,7 @@ public class CustomAuthRealm extends AppservRealm {
                     // for only normal password
                     if (prop.getProperty("cauth-realm-enabled").equals("false")) {
                         _logger.info("## CustomAuthRealm disabled.");
+                        
                         valid = pwd.equalsIgnoreCase(hpwd);
                     } else {
                         valid = pwd.equalsIgnoreCase(hpwd) && verifyCode(otp, Integer.parseInt(otpCode), getTimeIndex(), 5) && ((status == 1) || (status == 0));
@@ -516,11 +534,6 @@ public class CustomAuthRealm extends AppservRealm {
                             return Password.PLAIN_TEXT;
                         }
 
-                        @Override
-                        public String getAlgorithm() {
-                            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-                        }
-
                     };
                 } else {
                     return new Password() {
@@ -533,10 +546,6 @@ public class CustomAuthRealm extends AppservRealm {
                             return Password.HASHED;
                         }
 
-                        @Override
-                        public String getAlgorithm() {
-                            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-                        }
                     };
                 }
             }

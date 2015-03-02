@@ -16,7 +16,6 @@ public class CustomAuthLoginModule extends AppservPasswordLoginModule {
     /* Adapted from http://grepcode.com/file/repo1.maven.org/maven2/org.glassfish.security/security/3.0.1/com/sun/enterprise/security/auth/realm/jdbc/JDBCRealm.java*/
     @Override
     protected void authenticateUser() throws LoginException {
-
         if (!(_currentRealm instanceof CustomAuthRealm)) {
             String msg = sm.getString("cauthlm.badrealm");
             throw new LoginException(msg);
