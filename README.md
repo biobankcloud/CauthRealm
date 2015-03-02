@@ -1,21 +1,19 @@
-### Checkout the Custom Realm (crealm) and build it:
+### Build the Custom Realm:
 
  *  $git clone https://github.com/gholamiali/CauthRealm.git
  *  $cd CauthRealm
  *  $mvn compile
  *  $mvn assembly:assembly
-  
-### Check the property file under: src/main/resource 
-*  enable/disable CauthRealm.
+ *  Check the property file under: src/main/resource and enable/disable CauthRealm.
+ *  After build a jar file called otp-auth-1.0-SNAPSHOT-jar-with-dependencies.jar will be produced. Put the produced jar file under the following glasfish directories:
+ * $cp crealm/target/otp-auth-1.0-SNAPSHOT-jar-with-dependencies.jar  [glassfish home installation]/glassfish/domains/domain1/lib/
 
-### Add the custom realm tables to your database
+### Install the DB schema
  * $mysql -u[username] -p[password] kthfs < src/main/resources/kthfs.sql
 
-### After build a jar file called otp-auth-1.0-SNAPSHOT-jar-with-dependencies.jar will be produced. Put the produced jar file under the following glasfish directories:
+### Enable the config
 
-* $cp crealm/target/otp-auth-1.0-SNAPSHOT-jar-with-dependencies.jar  [glassfish home installation]/glassfish/domains/domain1/lib/
-
-### Add the following statement to [glassfish home installation]/glassfish/domains/domain1/config/login.conf
+* Add the following statement to [glassfish home installation]/glassfish/domains/domain1/config/login.conf
 
 ```
 cauthRealm{
@@ -23,7 +21,10 @@ cauthRealm{
 };
 
 ```
-* Modify the domin.xml file under [glassfish home installation]/glassfish/domains/domain1/config/domain.xml so the custom cauthRealm section looks like below:
+
+### Modify the domin.xml 
+
+* domain.xml file is under [glassfish home installation]/glassfish/domains/domain1/config/domain.xml. The custom cauthRealm section should contain:
 
 
 ```
