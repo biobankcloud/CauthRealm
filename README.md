@@ -1,21 +1,21 @@
-# Checkout the Custom Realm (crealm) and build it:
+### Checkout the Custom Realm (crealm) and build it:
 
  *  $git clone https://github.com/gholamiali/CauthRealm.git
  *  $cd CauthRealm
  *  $mvn compile
  *  $mvn assembly:assembly
   
-# Check the property file under: src/main/resource 
+### Check the property file under: src/main/resource 
 *  enable/disable CauthRealm.
 
-# Add the custom realm tables to your database
+### Add the custom realm tables to your database
  * $mysql -u[username] -p[password] kthfs < src/main/resources/kthfs.sql
 
 # After build a jar file called otp-auth-1.0-SNAPSHOT-jar-with-dependencies.jar will be produced. Put the produced jar file under the following glasfish directories:
 
 * $cp crealm/target/otp-auth-1.0-SNAPSHOT-jar-with-dependencies.jar  [glassfish home installation]/glassfish/domains/domain1/lib/
 
-# Add the following statement to [glassfish home installation]/glassfish/domains/domain1/config/login.conf
+### Add the following statement to [glassfish home installation]/glassfish/domains/domain1/config/login.conf
 
 ```
 cauthRealm{
@@ -34,7 +34,7 @@ cauthRealm{
           <property name="jaas-context" value="cauthRealm"></property>
           <property name="encoding" value="Hex"></property>
           <property name="password-column" value="password"></property>
-          <property name="datasource-jndi" value="jdbc/lims"></property>
+          <property name="datasource-jndi" value="jdbc/name_of_resource]"></property>
           <property name="group-table" value="USERS_GROUPS"></property>
           <property name="user-table" value="USERS"></property>
           <property name="charset" value="UTF-8"></property>
@@ -52,4 +52,4 @@ cauthRealm{
 
 ```
 
-# Restart the Glassfish server
+### Restart the Glassfish server
