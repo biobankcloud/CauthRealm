@@ -6,9 +6,11 @@
  *  $mvn assembly:assembly
  *  Check the property file under: src/main/resource and enable/disable CauthRealm.
  *  After build a jar file called otp-auth-1.0-SNAPSHOT-jar-with-dependencies.jar will be produced. Put the produced jar file under the following glasfish directories:
- * $cp crealm/target/otp-auth-1.0-SNAPSHOT-jar-with-dependencies.jar  [glassfish home installation]/glassfish/domains/domain1/lib/
+ *  $cp target/otp-auth-1.0-SNAPSHOT-jar-with-dependencies.jar  [glassfish home installation]/glassfish/domains/domain1/lib/
 
 ### Install the DB schema
+
+ * Create a db named "kthfs" in a MySQL server 
  * $mysql -u[username] -p[password] kthfs < src/main/resources/kthfs.sql
 
 ### Enable the config
@@ -22,7 +24,7 @@ cauthRealm{
 
 ```
 
-### Modify the domin.xml 
+### Modify the domain.xml 
 
 * domain.xml file is under [glassfish home installation]/glassfish/domains/domain1/config/domain.xml. The custom cauthRealm section should contain:
 

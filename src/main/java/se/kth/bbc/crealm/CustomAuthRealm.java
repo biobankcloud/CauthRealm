@@ -15,7 +15,6 @@ import com.yubico.base.Pof;
 import com.yubico.base.Token;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.security.GeneralSecurityException;
@@ -477,7 +476,7 @@ public class CustomAuthRealm extends AppservRealm {
                         
                         valid = pwd.equalsIgnoreCase(hpwd);
                     } else {
-                        valid = pwd.equalsIgnoreCase(hpwd) && verifyCode(otp, Integer.parseInt(otpCode), getTimeIndex(), 5) && ((status == 1) || (status == 0));
+                        valid = pwd.equalsIgnoreCase(hpwd) && verifyCode(otp, Integer.parseInt(otpCode), getTimeIndex(), 5) && ((status == AccountStatus.ACCOUNT_ACTIVE) || (status == AccountStatus.ACCOUNT_PENDING));
                     }
                 } else {
                     // for only normal password
@@ -485,7 +484,7 @@ public class CustomAuthRealm extends AppservRealm {
                         _logger.info("## CustomAuthRealm disabled.");
                         valid = pwd.equalsIgnoreCase(hpwd);
                     } else {
-                        valid = pwd.equals(hpwd) && verifyCode(otp, Integer.parseInt(otpCode.trim()), getTimeIndex(), 5) && ((status == 1) || (status == 0));
+                        valid = pwd.equals(hpwd) && verifyCode(otp, Integer.parseInt(otpCode.trim()), getTimeIndex(), 5) && ((status == AccountStatus.ACCOUNT_ACTIVE) || (status == AccountStatus.ACCOUNT_PENDING));
                     }
                 }
             }
