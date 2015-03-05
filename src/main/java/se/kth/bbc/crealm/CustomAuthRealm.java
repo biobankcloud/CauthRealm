@@ -15,7 +15,6 @@ import com.yubico.base.Pof;
 import com.yubico.base.Token;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.security.GeneralSecurityException;
