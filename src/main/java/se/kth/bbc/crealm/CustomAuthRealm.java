@@ -476,8 +476,8 @@ public class CustomAuthRealm extends AppservRealm {
                         
                         valid = pwd.equalsIgnoreCase(hpwd);
                     } else {
-                        valid = pwd.equalsIgnoreCase(hpwd) && verifyCode(otp, Integer.parseInt(otpCode), getTimeIndex(), 5) && ((status == PeoplAccountStatus.ACCOUNT_ACTIVE.ordinal()) 
-                                || (status == PeoplAccountStatus.ACCOUNT_PENDING.ordinal()));
+                        valid = pwd.equalsIgnoreCase(hpwd) && verifyCode(otp, Integer.parseInt(otpCode), getTimeIndex(), 5) && ((status == PeoplAccountStatus.ACCOUNT_ACTIVE.getValue()) 
+                                || (status == PeoplAccountStatus.ACCOUNT_PENDING.getValue()));
                     }
                 } else {
                     // for only normal password
@@ -486,8 +486,8 @@ public class CustomAuthRealm extends AppservRealm {
                         valid = pwd.equalsIgnoreCase(hpwd);
                     } else {
                         valid = pwd.equals(hpwd) && verifyCode(otp, Integer.parseInt(otpCode.trim()), getTimeIndex(), 5)
-                                && ((status == PeoplAccountStatus.ACCOUNT_ACTIVE.ordinal()) ||
-                                (status == PeoplAccountStatus.ACCOUNT_PENDING.ordinal()));
+                                && ((status == PeoplAccountStatus.ACCOUNT_ACTIVE.getValue()) ||
+                                (status == PeoplAccountStatus.ACCOUNT_PENDING.getValue()));
                     }
                 }
             }
@@ -723,7 +723,7 @@ public class CustomAuthRealm extends AppservRealm {
             if (!rs.first()) {
                 return false;
             }
-            if (rs.getInt("status") !=PeoplAccountStatus.ACCOUNT_ACTIVE.ordinal()) {
+            if (rs.getInt("status") !=PeoplAccountStatus.ACCOUNT_ACTIVE.getValue()) {
                 return false;
             }
 

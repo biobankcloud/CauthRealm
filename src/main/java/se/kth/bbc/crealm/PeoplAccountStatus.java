@@ -11,7 +11,7 @@ package se.kth.bbc.crealm;
  */
 
 public enum PeoplAccountStatus{
-    DUMMY(0),
+  
     YUBIKEY_ACCOUNT_INACTIVE(1),
     MOBILE_ACCOUNT_INACTIVE(2),
     ACCOUNT_PENDING(3),
