@@ -37,7 +37,7 @@ cauthRealm{
           <property name="jaas-context" value="cauthRealm"></property>
           <property name="encoding" value="Hex"></property>
           <property name="password-column" value="password"></property>
-          <property name="datasource-jndi" value="jdbc/name_of_resource]"></property>
+          <property name="datasource-jndi" value="jdbc/kthfs"></property>
           <property name="group-table" value="USERS_GROUPS"></property>
           <property name="user-table" value="USERS"></property>
           <property name="charset" value="UTF-8"></property>
@@ -55,8 +55,8 @@ cauthRealm{
 
 Otherwise, you can use command line through the Glassfish asadmin console:
 
-asadmin  create-auth-realm --classname se.kth.bbc.crealm.CustomAuthRealm --property "jaas-context=cauthRealm:encoding=Hex:password-column=password:datasource-jndi=jdbc/kthfs:group-table=USERS_GROUPS:user-table=USERS:charset=UTF-8:group-name-column=group_name:user-name-column=email:otp-secret-column=secret:user-status-column=status:group-table-user-name-column=email:yubikey-table=Yubikey" cauthRealm
-
+asadmin  create-auth-realm --classname se.kth.bbc.crealm.CustomAuthRealm 
+--property "jaas-context=cauthRealm:encoding=Hex:password-column=password:datasource-jndi=jdbc/kthfs:group-table=USERS_GROUPS:user-table=USERS:charset=UTF-8:group-name-column=group_name:user-name-column=email:otp-secret-column=secret:user-status-column=status:group-table-user-name-column=email:yubikey-table=Yubikey" cauthRealm
 
 ```
 
