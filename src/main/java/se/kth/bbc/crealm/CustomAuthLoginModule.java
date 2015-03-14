@@ -36,8 +36,7 @@ public class CustomAuthLoginModule extends AppservPasswordLoginModule {
         }
 
         if (_logger.isLoggable(Level.FINEST)) {
-            _logger.finest("Gauth login succeeded for: " + _username
-                    + " groups:" + Arrays.toString(grpList));
+            _logger.log(Level.FINEST, "Gauth login succeeded for: {0} groups:{1}", new Object[]{_username, Arrays.toString(grpList)});
         }
 
         final String[] groupListToForward = new String[grpList.length];

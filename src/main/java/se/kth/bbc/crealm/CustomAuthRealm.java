@@ -39,11 +39,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import javax.naming.NamingException;
 import javax.security.auth.login.LoginException;
 import org.jvnet.hk2.annotations.Service;
 import javax.sql.DataSource;
 import org.apache.commons.codec.binary.Base32;
 import org.glassfish.hk2.api.ActiveDescriptor;
+import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.utilities.BuilderHelper;
 
 /**
@@ -266,16 +268,14 @@ public class CustomAuthRealm extends AppservRealm {
         }
 
         if (_logger.isLoggable(Level.FINEST)) {
-            _logger.finest("CustomAuthRealm : "
-                    + IASRealm.JAAS_CONTEXT_PARAM + "= " + jaasCtx + ", "
-                    + PARAM_DATASOURCE_JNDI + " = " + dsJndi + ", "
-                    + PARAM_DIGEST_ALGORITHM + " = " + digestAlgorithm + ", "
-                    + PARAM_ENCODING + " = " + encoding + ", "
-                    + PARAM_CHARSET + " = " + charset);
+            _logger.log(Level.FINEST,"CustomAuthRealm : " + IASRealm.JAAS_CONTEXT_PARAM + "= {0}" + ", "
+                    + PARAM_DATASOURCE_JNDI + " = {1}" + ", " + PARAM_DIGEST_ALGORITHM
+                    + " = {2}" + ", " + PARAM_ENCODING + " = {3}"
+                    + ", " + PARAM_CHARSET + " = {4}", new Object[]{jaasCtx, dsJndi, digestAlgorithm, encoding, charset});
         }
 
-        groupCache = new HashMap<String, Vector>();
-        emptyVector = new Vector<String>();
+        groupCache = new HashMap<>();
+        emptyVector = new Vector<>();
     
     }
 
@@ -321,7 +321,7 @@ public class CustomAuthRealm extends AppservRealm {
             Connection connection = null;
             connection = dataSource.getConnection();
             return connection;
-        } catch (Exception ex) {
+        } catch (MultiException | NamingException | SQLException ex) {
             String msg = sm.getString("cauth realm.cantconnect", dsJndi);
             LoginException loginEx = new LoginException(msg);
             loginEx.initCause(ex);
@@ -411,7 +411,9 @@ public class CustomAuthRealm extends AppservRealm {
                         valid = pwd.equalsIgnoreCase(hpwd);
                     } else {
 
-                        valid = validateOTP(otpCode.substring(0, 12), otpCode.substring(split)) && ((status == 1) || (status == 0));
+                        valid = validateOTP(otpCode.substring(0, 12), otpCode.substring(split)) && 
+                                (status == PeoplAccountStatus.ACCOUNT_ACTIVE.getValue() 
+                                || (status == PeoplAccountStatus.ACCOUNT_PENDING.getValue()));
                         // valid = pwd.equalsIgnoreCase(hpwd) && verifyCode(otp, Integer.parseInt(otpCode), getTimeIndex(), 5) && ((status==1)|| (status==0));
                     }
                 } else {
@@ -420,7 +422,9 @@ public class CustomAuthRealm extends AppservRealm {
                         _logger.info("## CustomAuthRealm disabled.");
                         valid = pwd.equalsIgnoreCase(hpwd);
                     } else {
-                        valid = validateOTP(otpCode.substring(0, 12), otpCode.substring(split)) && ((status == 1) || (status == 0));
+                        valid = validateOTP(otpCode.substring(0, 12), otpCode.substring(split)) &&
+                                (status == PeoplAccountStatus.ACCOUNT_ACTIVE.getValue() 
+                                || (status == PeoplAccountStatus.ACCOUNT_PENDING.getValue()));
                         //valid = pwd.equals(hpwd) && verifyCode(otp, Integer.parseInt(otpCode.trim()), getTimeIndex(), 5) && ((status==1) || (status ==0));
                     }
                 }
@@ -431,7 +435,7 @@ public class CustomAuthRealm extends AppservRealm {
             if (_logger.isLoggable(Level.FINE)) {
                 _logger.log(Level.FINE, "Cannot validate user", ex);
             }
-        } catch (Exception ex) {
+        } catch (CharacterCodingException | LoginException | NumberFormatException ex) {
             _logger.log(Level.SEVERE, "cauth realm.invaliduser", user);
             if (_logger.isLoggable(Level.FINE)) {
                 _logger.log(Level.FINE, "Cannot validate user", ex);
@@ -476,7 +480,8 @@ public class CustomAuthRealm extends AppservRealm {
                         
                         valid = pwd.equalsIgnoreCase(hpwd);
                     } else {
-                        valid = pwd.equalsIgnoreCase(hpwd) && verifyCode(otp, Integer.parseInt(otpCode), getTimeIndex(), 5) && ((status == PeoplAccountStatus.ACCOUNT_ACTIVE.getValue()) 
+                        valid = pwd.equalsIgnoreCase(hpwd) && verifyCode(otp, Integer.parseInt(otpCode), getTimeIndex(), 5)
+                                && ((status == PeoplAccountStatus.ACCOUNT_ACTIVE.getValue()) 
                                 || (status == PeoplAccountStatus.ACCOUNT_PENDING.getValue()));
                     }
                 } else {
@@ -497,7 +502,7 @@ public class CustomAuthRealm extends AppservRealm {
             if (_logger.isLoggable(Level.FINE)) {
                 _logger.log(Level.FINE, "Cannot validate user", ex);
             }
-        } catch (Exception ex) {
+        } catch (CharacterCodingException | LoginException | NumberFormatException | NoSuchAlgorithmException | InvalidKeyException ex) {
             _logger.log(Level.SEVERE, "cauth realm.invaliduser", user);
             if (_logger.isLoggable(Level.FINE)) {
                 _logger.log(Level.FINE, "Cannot validate user", ex);
@@ -584,13 +589,13 @@ public class CustomAuthRealm extends AppservRealm {
             statement = connection.prepareStatement(groupQuery);
             statement.setString(1, user);
             rs = statement.executeQuery();
-            final List<String> groups = new ArrayList<String>();
+            final List<String> groups = new ArrayList<>();
             while (rs.next()) {
                 groups.add(rs.getString(1));
             }
             final String[] groupArray = new String[groups.size()];
             return groups.toArray(groupArray);
-        } catch (Exception ex) {
+        } catch (LoginException | SQLException ex) {
             _logger.log(Level.SEVERE, "cauth realm.grouperror", user);
             if (_logger.isLoggable(Level.FINE)) {
                 _logger.log(Level.FINE, "Cannot load group", ex);
@@ -723,7 +728,7 @@ public class CustomAuthRealm extends AppservRealm {
             if (!rs.first()) {
                 return false;
             }
-            if (rs.getInt("status") !=PeoplAccountStatus.ACCOUNT_ACTIVE.getValue()) {
+            if (rs.getInt("status") != PeoplAccountStatus.ACCOUNT_ACTIVE.getValue()) {
                 return false;
             }
 
