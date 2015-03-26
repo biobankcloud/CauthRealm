@@ -38,15 +38,15 @@ cauthRealm{
           <property name="encoding" value="Hex"></property>
           <property name="password-column" value="password"></property>
           <property name="datasource-jndi" value="jdbc/kthfs"></property>
-          <property name="group-table" value="USERS_GROUPS"></property>
-          <property name="user-table" value="USERS"></property>
+          <property name="group-table" value="users_groups"></property>
+          <property name="user-table" value="users"></property>
           <property name="charset" value="UTF-8"></property>
           <property name="group-name-column" value="group_name"></property>
           <property name="user-name-column" value="email"></property>
           <property name="otp-secret-column" value="secret"></property>
           <property name="user-status-column" value="status"></property>
           <property name="group-table-user-name-column" value="email"></property>
-	   <property name="yubikey-table" value="Yubikey"></property>
+	   <property name="yubikey-table" value="yubikey"></property>
         
 	</auth-realm>
 	...
