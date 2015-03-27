@@ -402,24 +402,22 @@ public class CustomAuthRealm extends AppservRealm {
                 if (HEX.equalsIgnoreCase(getProperty(PARAM_ENCODING))) {
                     // for only normal password
                     if (prop.getProperty("cauth-realm-enabled").equals("false")) {
-                        _logger.info("## CustomAuthRealm disabled.");
                         valid = pwd.equalsIgnoreCase(hpwd);
                     } else {
 
                         valid = validateOTP(otpCode.substring(0, 12), otpCode.substring(split))
-                                && (status == PeoplAccountStatus.ACCOUNT_ACTIVE.getValue()
-                                || (status == PeoplAccountStatus.ACCOUNT_PENDING.getValue()));
+                                && (status == PeopleAccountStatus.ACCOUNT_ACTIVE.getValue()
+                                || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
 
                     }
                 } else {
                     // for only normal password
                     if (prop.getProperty("cauth-realm-enabled").equals("false")) {
-                        _logger.info("## CustomAuthRealm disabled.");
                         valid = pwd.equalsIgnoreCase(hpwd);
                     } else {
                         valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(0, 12), otpCode.substring(split))
-                                && (status == PeoplAccountStatus.ACCOUNT_ACTIVE.getValue()
-                                || (status == PeoplAccountStatus.ACCOUNT_PENDING.getValue()));
+                                && (status == PeopleAccountStatus.ACCOUNT_ACTIVE.getValue()
+                                || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
                     }
                 }
             }
@@ -470,22 +468,22 @@ public class CustomAuthRealm extends AppservRealm {
                 if (HEX.equalsIgnoreCase(getProperty(PARAM_ENCODING))) {
                     // for only normal password
                     if (prop.getProperty("cauth-realm-enabled").equals("false")) {
-                        _logger.info("## CustomAuthRealm disabled.");
                         valid = pwd.equalsIgnoreCase(hpwd);
                     } else {
-                        valid = pwd.equalsIgnoreCase(hpwd) && verifyCode(otp, Integer.parseInt(otpCode), getTimeIndex(), 5)
-                                && ((status == PeoplAccountStatus.ACCOUNT_ACTIVE.getValue())
-                                || (status == PeoplAccountStatus.ACCOUNT_PENDING.getValue()));
+                        valid = pwd.equalsIgnoreCase(hpwd) 
+                                && verifyCode(otp, Integer.parseInt(otpCode), getTimeIndex(), 5)
+                                && ((status == PeopleAccountStatus.ACCOUNT_ACTIVE.getValue())
+                                || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
                     }
                 } else {
                     // for only normal password
                     if (prop.getProperty("cauth-realm-enabled").equals("false")) {
-                        _logger.info("## CustomAuthRealm disabled.");
                         valid = pwd.equalsIgnoreCase(hpwd);
                     } else {
-                        valid = pwd.equals(hpwd) && verifyCode(otp, Integer.parseInt(otpCode.trim()), getTimeIndex(), 5)
-                                && ((status == PeoplAccountStatus.ACCOUNT_ACTIVE.getValue())
-                                || (status == PeoplAccountStatus.ACCOUNT_PENDING.getValue()));
+                        valid = pwd.equals(hpwd) 
+                                && verifyCode(otp, Integer.parseInt(otpCode.trim()), getTimeIndex(), 5)
+                                && ((status == PeopleAccountStatus.ACCOUNT_ACTIVE.getValue())
+                                || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
                     }
                 }
             }
@@ -725,7 +723,7 @@ public class CustomAuthRealm extends AppservRealm {
             if (!rs.first()) {
                 return false;
             }
-            if (rs.getInt("status") != PeoplAccountStatus.ACCOUNT_ACTIVE.getValue()) {
+            if (rs.getInt("status") != PeopleAccountStatus.ACCOUNT_ACTIVE.getValue()) {
                 return false;
             }
 
