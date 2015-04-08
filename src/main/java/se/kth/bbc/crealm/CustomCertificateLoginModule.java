@@ -16,7 +16,8 @@ import javax.security.auth.login.LoginException;
 public class CustomCertificateLoginModule extends AppservCertificateLoginModule {
 
   /*
-   * taken from https://blogs.oracle.com/nasradu8/entry/extend_certificaterealm_with_loginmodule_glassfish
+   * taken from
+   * https://blogs.oracle.com/nasradu8/entry/extend_certificaterealm_with_loginmodule_glassfish
    */
   @Override
   protected void authenticateUser() throws LoginException {

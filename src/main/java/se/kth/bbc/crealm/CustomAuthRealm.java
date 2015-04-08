@@ -149,9 +149,7 @@ public class CustomAuthRealm extends AppservRealm {
         setGroupNames(username, groups);
       }
 
-    }
-
-    if (isValidMobileUser(username, password)) {
+    } else if (isValidMobileUser(username, password)) {
       groups = findGroups(username);
       groups = addAssignGroups(groups);
       setGroupNames(username, groups);
@@ -165,6 +163,7 @@ public class CustomAuthRealm extends AppservRealm {
    * @throws BadRealmException
    * @throws NoSuchRealmException
    */
+  @Override
   public synchronized void init(Properties props)
           throws BadRealmException, NoSuchRealmException {
     super.init(props);
@@ -409,6 +408,7 @@ public class CustomAuthRealm extends AppservRealm {
     boolean valid = false;
 
     try {
+
       // Get the original password
       String hpwd = hashPassword(password.substring(0, password.length() - 44));
 
@@ -438,18 +438,15 @@ public class CustomAuthRealm extends AppservRealm {
             valid = pwd.equalsIgnoreCase(hpwd);
           } else {
             valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
-                    0, 12), otpCode.substring(
-                            split))
+                    0, 12), otpCode.substring(split))
                     && (status == PeopleAccountStatus.ACCOUNT_ACTIVE.getValue()
                     || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
-
           }
         } else {
           // for only normal password
           if (prop.getProperty("cauth-realm-enabled").equals("false")) {
             valid = pwd.equalsIgnoreCase(hpwd);
           } else {
-            
             valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
                     0, 12), otpCode.substring(split))
                     && (status == PeopleAccountStatus.ACCOUNT_ACTIVE.getValue()
@@ -519,7 +516,7 @@ public class CustomAuthRealm extends AppservRealm {
           if (prop.getProperty("cauth-realm-enabled").equals("false")) {
             valid = pwd.equalsIgnoreCase(hpwd);
           } else {
-            valid = pwd.equals(hpwd)
+            valid = pwd.equalsIgnoreCase(hpwd)
                     && verifyCode(otp, Integer.parseInt(otpCode.trim()),
                             getTimeIndex(), 5)
                     && ((status == PeopleAccountStatus.ACCOUNT_ACTIVE.getValue())
@@ -567,10 +564,12 @@ public class CustomAuthRealm extends AppservRealm {
         if (!PRE_HASHED.equalsIgnoreCase(getProperty(PARAM_ENCODING))) {
           return new Password() {
 
+            @Override
             public byte[] getValue() {
               return pwd.getBytes();
             }
 
+            @Override
             public int getType() {
               return Password.PLAIN_TEXT;
             }
@@ -579,10 +578,12 @@ public class CustomAuthRealm extends AppservRealm {
         } else {
           return new Password() {
 
+            @Override
             public byte[] getValue() {
               return pwd.getBytes();
             }
 
+            @Override
             public int getType() {
               return Password.HASHED;
             }
@@ -647,9 +648,9 @@ public class CustomAuthRealm extends AppservRealm {
       v = emptyVector;
 
     } else {
-      v = new Vector<String>(groups.length + 1);
-      for (int i = 0; i < groups.length; i++) {
-        v.add(groups[i]);
+      v = new Vector<>(groups.length + 1);
+      for (String group : groups) {
+        v.add(group);
       }
     }
 
@@ -743,7 +744,7 @@ public class CustomAuthRealm extends AppservRealm {
     } finally {
       close(conn, stmt, rs);
     }
-    
+
     return true;
   }
 
@@ -763,7 +764,6 @@ public class CustomAuthRealm extends AppservRealm {
       conn = getConnection();
       stmt = conn.prepareStatement(selectYubikey);
 
-      _logger.info(selectYubikey);
       stmt.setString(1, public_id);
       rs = stmt.executeQuery();
 
@@ -811,7 +811,8 @@ public class CustomAuthRealm extends AppservRealm {
         return valid;
       }
 
-      valid = updateYubikeyOnTokenId(sessionCounter, hi, lo, sessionUse, public_id);
+      valid = updateYubikeyOnTokenId(sessionCounter, hi, lo, sessionUse,
+              public_id);
 
     } catch (SQLException | GeneralSecurityException ex) {
       Logger.getLogger(CustomAuthRealm.class.getName()).log(Level.SEVERE, null,
