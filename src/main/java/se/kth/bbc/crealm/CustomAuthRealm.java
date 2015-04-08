@@ -412,9 +412,6 @@ public class CustomAuthRealm extends AppservRealm {
       // Get the original password
       String hpwd = hashPassword(password.substring(0, password.length() - 44));
 
-           
-      _logger.log(Level.INFO, "##### {0}", hpwd);
-           
       // Get the 44 digit OTP code
       String otpCode = password.substring(password.length() - 44).toLowerCase();
 
@@ -425,8 +422,6 @@ public class CustomAuthRealm extends AppservRealm {
       connection = getConnection();
 
       statement = connection.prepareStatement(passwordQuery);
-
-      _logger.log(Level.INFO, "##### {0}", passwordQuery);
 
       statement.setString(1, user);
       rs = statement.executeQuery();
@@ -442,8 +437,6 @@ public class CustomAuthRealm extends AppservRealm {
           if (prop.getProperty("cauth-realm-enabled").equals("false")) {
             valid = pwd.equalsIgnoreCase(hpwd);
           } else {
-            _logger.log(Level.INFO, "##### {0}   {1}  {2}", new Object[]{hpwd,
-              pwd, otpCode});
             valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
                     0, 12), otpCode.substring(
                             split))
@@ -457,8 +450,6 @@ public class CustomAuthRealm extends AppservRealm {
             valid = pwd.equalsIgnoreCase(hpwd);
           } else {
             
-            _logger.info("##### "+ hpwd + "   "+ pwd + "  "+ otpCode);
-
             valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
                     0, 12), otpCode.substring(split))
                     && (status == PeopleAccountStatus.ACCOUNT_ACTIVE.getValue()
@@ -517,7 +508,6 @@ public class CustomAuthRealm extends AppservRealm {
           if (prop.getProperty("cauth-realm-enabled").equals("false")) {
             valid = pwd.equalsIgnoreCase(hpwd);
           } else {
-            _logger.info("###" + hpwd +"  "+ pwd);
             valid = pwd.equalsIgnoreCase(hpwd)
                     && verifyCode(otp, Integer.parseInt(otpCode), getTimeIndex(),
                             5)
@@ -777,7 +767,6 @@ public class CustomAuthRealm extends AppservRealm {
       stmt.setString(1, public_id);
       rs = stmt.executeQuery();
 
-      _logger.info("### " + rs.getString("aes_secret")+ " "+ rs.getString(public_id));
       if (!rs.first()) {
         return valid;
       }
