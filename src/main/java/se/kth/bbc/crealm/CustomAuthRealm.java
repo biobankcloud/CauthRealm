@@ -478,7 +478,7 @@ public class CustomAuthRealm extends AppservRealm {
     PreparedStatement statement = null;
     ResultSet rs = null;
 
-    boolean valid = true;
+    boolean valid = false;
 
     try {
 
