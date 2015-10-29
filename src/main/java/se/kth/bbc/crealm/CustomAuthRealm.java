@@ -101,6 +101,8 @@ public class CustomAuthRealm extends AppservRealm {
           = "group-table-user-name-column";
   public static final String PARAM_USER_STATUS = "user-status-column";
   public static final String PARAM_YUBIKEY_TABLE = "yubikey-table";
+  
+  public static final String PARAM_VARIABLES_TABLE = "variables-table";
 
   /*
    * public static final String PARAM_YUBIKEY_ID_COLUMN = "yubikey-id-column";
@@ -126,6 +128,9 @@ public class CustomAuthRealm extends AppservRealm {
   private String groupQuery = null;
   private String yubikeyUpdateQuery = null;
   private String selectYubikey = null;
+  
+  private String selectAuthMethod = null;
+  
   private MessageDigest md = null;
   Properties prop = null;
 
@@ -183,6 +188,8 @@ public class CustomAuthRealm extends AppservRealm {
             PARAM_GROUP_TABLE_USER_NAME_COLUMN, userNameColumn);
     String userActiveColumn = props.getProperty(PARAM_USER_STATUS);
     String yubikeyTable = props.getProperty(PARAM_YUBIKEY_TABLE);
+    
+    String variablesTable = props.getProperty(PARAM_VARIABLES_TABLE);
 
     /*
      * String yubikeyId = props.getProperty(PARAM_YUBIKEY_ID_COLUMN);
@@ -199,7 +206,7 @@ public class CustomAuthRealm extends AppservRealm {
     cr = (ActiveDescriptor<ConnectorRuntime>) Util.getDefaultHabitat().
             getBestDescriptor(BuilderHelper.createContractFilter(
                             ConnectorRuntime.class.getName()));
-
+    /*
     // load the properties to enable/disable the realm
     prop = new Properties();
     try {
@@ -210,7 +217,7 @@ public class CustomAuthRealm extends AppservRealm {
     } catch (IOException ex) {
       Logger.getLogger(CustomAuthRealm.class.getName()).log(Level.SEVERE, null,
               ex);
-    }
+    }*/
     if (jaasCtx == null) {
       String msg = sm.getString(
               "realm.missingprop", IASRealm.JAAS_CONTEXT_PARAM,
@@ -264,6 +271,9 @@ public class CustomAuthRealm extends AppservRealm {
             + "high = ?, low = ?, session_use = ? WHERE public_id = ?";
 
     selectYubikey = "SELECT * FROM " + yubikeyTable + " WHERE public_id = ?";
+    
+    selectAuthMethod = "SELECT value FROM " + variablesTable + " WHERE id = 'twofactor_auth'";
+
 
     if (!NONE.equalsIgnoreCase(digestAlgorithm)) {
       try {
@@ -302,104 +312,6 @@ public class CustomAuthRealm extends AppservRealm {
 
   }
 
-  private void close(Connection conn, PreparedStatement stmt,
-          ResultSet rs) {
-    if (rs != null) {
-      try {
-        rs.close();
-      } catch (Exception ex) {
-      }
-    }
-
-    if (stmt != null) {
-      try {
-        stmt.close();
-      } catch (Exception ex) {
-      }
-    }
-
-    if (conn != null) {
-      try {
-        conn.close();
-      } catch (Exception ex) {
-      }
-    }
-  }
-
-  private Connection getConnection() throws LoginException {
-
-    final String dsJndi = this.getProperty(PARAM_DATASOURCE_JNDI);
-    try {
-      String nonTxJndiName = dsJndi + "__nontx";
-      /*
-       * InitialContext ic = new InitialContext();
-       * final DataSource dataSource =
-       * //V3 Commented
-       * (DataSource)ConnectorRuntime.getRuntime().lookupNonTxResource(dsJndi,false);
-       * //replacement code suggested by jagadish
-       * (DataSource)ic.lookup(nonTxJndiName);
-       */
-      ConnectorRuntime connectorRuntime = Util.getDefaultHabitat().
-              getServiceHandle(cr).getService();
-      final DataSource dataSource
-              = (DataSource) connectorRuntime.lookupNonTxResource(dsJndi, false);
-
-      //(DataSource)ConnectorRuntime.getRuntime().lookupNonTxResource(dsJndi,false);
-      Connection connection = null;
-      connection = dataSource.getConnection();
-      return connection;
-    } catch (MultiException | NamingException | SQLException ex) {
-      String msg = sm.getString("cauth realm.cantconnect", dsJndi);
-      LoginException loginEx = new LoginException(msg);
-      loginEx.initCause(ex);
-      throw loginEx;
-    }
-
-  }
-
-  private String hashPassword(String password)
-          throws CharacterCodingException {
-    char[] pass = password.toCharArray();
-    byte[] bytes = null;
-    char[] result = null;
-    String charSet = getProperty(PARAM_CHARSET);
-    bytes = Utility.convertCharArrayToByteArray(pass, charSet);
-
-    if (md != null) {
-      synchronized (md) {
-        md.reset();
-        bytes = md.digest(bytes);
-      }
-    }
-
-    String encoding = getProperty(PARAM_ENCODING);
-    if (HEX.equalsIgnoreCase(encoding)) {
-      result = hexEncode(bytes);
-    } else if (BASE64.equalsIgnoreCase(encoding)) {
-      result = base64Encode(bytes).toCharArray();
-    } else { // no encoding specified                                                                                                                                
-      result = Utility.convertByteArrayToCharArray(bytes, charSet);
-    }
-    return String.valueOf(result);
-  }
-
-  private char[] hexEncode(byte[] bytes) {
-    StringBuilder sb = new StringBuilder(2 * bytes.length);
-    for (int i = 0; i < bytes.length; i++) {
-      int low = (int) (bytes[i] & 0x0f);
-      int high = (int) ((bytes[i] & 0xf0) >> 4);
-      sb.append(HEXADECIMAL[high]);
-      sb.append(HEXADECIMAL[low]);
-    }
-    char[] result = new char[sb.length()];
-    sb.getChars(0, sb.length(), result, 0);
-    return result;
-  }
-
-  private String base64Encode(byte[] bytes) {
-    GFBase64Encoder encoder = new GFBase64Encoder();
-    return encoder.encode(bytes);
-  }
 
   private boolean isValidYubikeyUser(String user, String password) {
     Connection connection = null;
@@ -417,7 +329,9 @@ public class CustomAuthRealm extends AppservRealm {
 
       int len = otpCode.length();
       int split = len - 32;
-
+      
+      String mode = "false";
+      
       // Get connedcted to DB and find the user
       connection = getConnection();
 
@@ -431,10 +345,22 @@ public class CustomAuthRealm extends AppservRealm {
         pwd = rs.getString(1);
 
         int status = Integer.parseInt(rs.getString(3));
-
+        statement.close();
+        rs.close();
+       
+        // get the auth mode for two factor auth
+        statement = connection.prepareStatement(selectAuthMethod);
+        statement.setString(1, mode);
+       
+        rs = statement.executeQuery();
+        if(rs.next()){
+         
+         mode= rs.getString(1);
+         }
+        
         if (HEX.equalsIgnoreCase(getProperty(PARAM_ENCODING))) {
           // for only normal password
-          if (prop.getProperty("cauth-realm-enabled").equals("false")) {
+          if (mode.equals("false")) {
             valid = pwd.equalsIgnoreCase(hpwd);
           } else {
             valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
@@ -444,7 +370,7 @@ public class CustomAuthRealm extends AppservRealm {
           }
         } else {
           // for only normal password
-          if (prop.getProperty("cauth-realm-enabled").equals("false")) {
+          if (mode.equals("false")) {
             valid = pwd.equalsIgnoreCase(hpwd);
           } else {
             valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
@@ -479,7 +405,8 @@ public class CustomAuthRealm extends AppservRealm {
     ResultSet rs = null;
 
     boolean valid = false;
-
+    String mode = "false";
+    
     try {
 
       // Get the original password
@@ -499,10 +426,21 @@ public class CustomAuthRealm extends AppservRealm {
         pwd = rs.getString(1);
         String otp = rs.getString(2);
         int status = Integer.parseInt(rs.getString(3));
-
+        
+        
+        // get the auth mode for two factor auth
+        statement = connection.prepareStatement(selectAuthMethod);
+        statement.setString(1, mode);
+       
+        rs = statement.executeQuery();
+        if(rs.next()){
+         
+         mode= rs.getString(1);
+         }
+        
         if (HEX.equalsIgnoreCase(getProperty(PARAM_ENCODING))) {
           // for only normal password
-          if (prop.getProperty("cauth-realm-enabled").equals("false")) {
+          if (mode.equals("false")) {
             valid = pwd.equalsIgnoreCase(hpwd);
           } else {
             valid = pwd.equalsIgnoreCase(hpwd)
@@ -513,7 +451,7 @@ public class CustomAuthRealm extends AppservRealm {
           }
         } else {
           // for only normal password
-          if (prop.getProperty("cauth-realm-enabled").equals("false")) {
+          if (mode.equals("false")) {
             valid = pwd.equalsIgnoreCase(hpwd);
           } else {
             valid = pwd.equalsIgnoreCase(hpwd)
@@ -853,4 +791,106 @@ public class CustomAuthRealm extends AppservRealm {
     }
     return result;
   }
+  
+  
+  private Connection getConnection() throws LoginException {
+
+    final String dsJndi = this.getProperty(PARAM_DATASOURCE_JNDI);
+    try {
+      String nonTxJndiName = dsJndi + "__nontx";
+      /*
+       * InitialContext ic = new InitialContext();
+       * final DataSource dataSource =
+       * //V3 Commented
+       * (DataSource)ConnectorRuntime.getRuntime().lookupNonTxResource(dsJndi,false);
+       * //replacement code suggested by jagadish
+       * (DataSource)ic.lookup(nonTxJndiName);
+       */
+      ConnectorRuntime connectorRuntime = Util.getDefaultHabitat().
+              getServiceHandle(cr).getService();
+      final DataSource dataSource
+              = (DataSource) connectorRuntime.lookupNonTxResource(dsJndi, false);
+
+      //(DataSource)ConnectorRuntime.getRuntime().lookupNonTxResource(dsJndi,false);
+      Connection connection = null;
+      connection = dataSource.getConnection();
+      return connection;
+    } catch (MultiException | NamingException | SQLException ex) {
+      String msg = sm.getString("cauth realm.cantconnect", dsJndi);
+      LoginException loginEx = new LoginException(msg);
+      loginEx.initCause(ex);
+      throw loginEx;
+    }
+
+  }
+
+  private String hashPassword(String password)
+          throws CharacterCodingException {
+    char[] pass = password.toCharArray();
+    byte[] bytes = null;
+    char[] result = null;
+    String charSet = getProperty(PARAM_CHARSET);
+    bytes = Utility.convertCharArrayToByteArray(pass, charSet);
+
+    if (md != null) {
+      synchronized (md) {
+        md.reset();
+        bytes = md.digest(bytes);
+      }
+    }
+
+    String encoding = getProperty(PARAM_ENCODING);
+    if (HEX.equalsIgnoreCase(encoding)) {
+      result = hexEncode(bytes);
+    } else if (BASE64.equalsIgnoreCase(encoding)) {
+      result = base64Encode(bytes).toCharArray();
+    } else { // no encoding specified                                                                                                                                
+      result = Utility.convertByteArrayToCharArray(bytes, charSet);
+    }
+    return String.valueOf(result);
+  }
+
+  private char[] hexEncode(byte[] bytes) {
+    StringBuilder sb = new StringBuilder(2 * bytes.length);
+    for (int i = 0; i < bytes.length; i++) {
+      int low = (int) (bytes[i] & 0x0f);
+      int high = (int) ((bytes[i] & 0xf0) >> 4);
+      sb.append(HEXADECIMAL[high]);
+      sb.append(HEXADECIMAL[low]);
+    }
+    char[] result = new char[sb.length()];
+    sb.getChars(0, sb.length(), result, 0);
+    return result;
+  }
+
+  private String base64Encode(byte[] bytes) {
+    GFBase64Encoder encoder = new GFBase64Encoder();
+    return encoder.encode(bytes);
+  }
+  
+    private void close(Connection conn, PreparedStatement stmt,
+          ResultSet rs) {
+    if (rs != null) {
+      try {
+        rs.close();
+      } catch (Exception ex) {
+      }
+    }
+
+    if (stmt != null) {
+      try {
+        stmt.close();
+      } catch (Exception ex) {
+      }
+    }
+
+    if (conn != null) {
+      try {
+        conn.close();
+      } catch (Exception ex) {
+      }
+    }
+  }
+
+
 }

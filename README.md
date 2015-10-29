@@ -46,7 +46,8 @@ cauthRealm{
           <property name="otp-secret-column" value="secret"></property>
           <property name="user-status-column" value="status"></property>
           <property name="group-table-user-name-column" value="email"></property>
-	   <property name="yubikey-table" value="yubikey"></property>
+          <property name="yubikey-table" value="yubikey"></property>
+          <property name="variables-table" value="variables"></property>
         
 	</auth-realm>
 	...
@@ -55,7 +56,7 @@ cauthRealm{
 
 Otherwise, you can use command line through the Glassfish asadmin console:
 
-asadmin  create-auth-realm --classname se.kth.bbc.crealm.CustomAuthRealm --property "jaas-context=cauthRealm:encoding=Hex:password-column=password:datasource-jndi=jdbc/kthfs:group-table=users_groups:user-table=users:charset=UTF-8:group-name-column=group_name:user-name-column=email:otp-secret-column=secret:user-status-column=status:group-table-user-name-column=email:yubikey-table=yubikey" cauthRealm
+asadmin  create-auth-realm --classname se.kth.bbc.crealm.CustomAuthRealm --property "jaas-context=cauthRealm:encoding=Hex:password-column=password:datasource-jndi=jdbc/kthfs:group-table=users_groups:user-table=users:charset=UTF-8:group-name-column=group_name:user-name-column=email:otp-secret-column=secret:user-status-column=status:group-table-user-name-column=email:yubikey-table=yubikey:variables-table=variables" cauthRealm
 
 ```
 
