@@ -56,8 +56,7 @@ cauthRealm{
 
 Otherwise, you can use command line through the Glassfish asadmin console:
 
-asadmin  create-auth-realm --classname se.kth.bbc.crealm.CustomAuthRealm --property "jaas-context=cauthRealm:encoding=Hex:password-column=password:datasource-jndi=jdbc/kthfs:group-table=users_groups:user-table=users:charset=UTF-8:group-name-column=group_name:user-name-column=email:otp-secret-column=secret:user-status-column=status:group-table-user-name-column=email:yubikey-table=yubikey:variables-table=variables" cauthRealm
-
+asadmin  create-auth-realm --classname se.kth.bbc.crealm.CustomAuthRealm --property "jaas-context=cauthRealm:encoding=Hex:password-column=password:datasource-jndi=jdbc/hopsworks:group-table=hopsworks.users_groups:user-table=hopsworks.users:charset=UTF-8:group-name-column=group_name:user-name-column=email:otp-secret-column=secret:user-status-column=status:group-table-user-name-column=email:yubikey-table=hopsworks.yubikey:variables-table=hopsworks.variables" cauthRealm
 ```
 
 
