@@ -353,12 +353,11 @@ public class CustomAuthRealm extends AppservRealm {
         
         // get the auth mode for two factor auth
         statement = connection.prepareStatement(selectAuthMethod);
-        statement.setString(1, mode);
-       
+        
         rs = statement.executeQuery();
         if(rs.next()){
          
-         mode= rs.getString(1);
+           mode= rs.getString(1);
          }
         
         if (HEX.equalsIgnoreCase(getProperty(PARAM_ENCODING))) {
@@ -384,14 +383,14 @@ public class CustomAuthRealm extends AppservRealm {
         }
       }
     } catch (SQLException ex) {
-      _logger.log(Level.SEVERE, "cauthrealm.invalid user reason",
+      _logger.log(Level.SEVERE, "cauthrealm.invalid user reason 5",
               new String[]{user, ex.toString()});
       if (_logger.isLoggable(Level.FINE)) {
         _logger.log(Level.FINE, "Cannot validate user", ex);
       }
       return false;
     } catch (CharacterCodingException | LoginException | NumberFormatException ex) {
-      _logger.log(Level.SEVERE, "cauth realm.invalid user", user);
+      _logger.log(Level.SEVERE, "cauth realm.invalid user 6", user);
       if (_logger.isLoggable(Level.FINE)) {
         _logger.log(Level.FINE, "Cannot validate user", ex);
       }
@@ -430,23 +429,19 @@ public class CustomAuthRealm extends AppservRealm {
         String otp = rs.getString(2);
         int status = Integer.parseInt(rs.getString(3));
         
-        
-        // get the auth mode for two factor auth
-        statement = connection.prepareStatement(selectAuthMethod);
-        statement.setString(1, mode);
-      
         rs.close();
         statement.close();
-     
-        _logger.log(Level.SEVERE, "################# + pwd + status + otp :" + pwd + " "+ status + "  "+ otp);
         
+         
+        // get the auth mode for two factor auth
+        statement = connection.prepareStatement(selectAuthMethod);
+       
         rs = statement.executeQuery();
         
         if(rs.next()){
            mode= rs.getString(1);
          }
         
-        _logger.log(Level.SEVERE, "################# mode" +mode);
         
         
         if (HEX.equalsIgnoreCase(getProperty(PARAM_ENCODING))) {
@@ -474,7 +469,7 @@ public class CustomAuthRealm extends AppservRealm {
         }
       }
     } catch (SQLException ex) {
-      _logger.log(Level.SEVERE, "cauthrealm.invalid user reason",
+      _logger.log(Level.SEVERE, "cauth realm.invalid user reason 1",
               new String[]{user, ex.toString()});
       if (_logger.isLoggable(Level.FINE)) {
         _logger.log(Level.FINE, "Cannot validate user", ex);
@@ -482,7 +477,7 @@ public class CustomAuthRealm extends AppservRealm {
       return false;
     } catch (CharacterCodingException | LoginException | NumberFormatException |
             NoSuchAlgorithmException | InvalidKeyException ex) {
-      _logger.log(Level.SEVERE, "cauth realm.invaliduser", user);
+      _logger.log(Level.SEVERE, "cauth realm.invalid user 2", user);
       if (_logger.isLoggable(Level.FINE)) {
         _logger.log(Level.FINE, "Cannot validate user", ex);
       }
