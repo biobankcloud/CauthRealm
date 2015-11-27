@@ -5,16 +5,13 @@ import java.util.Arrays;
 import java.util.logging.Level;
 import javax.security.auth.login.LoginException;
 
-/**
- *
- * @author Ali Gholami <gholami@pdc.kth.se>
- */
 public class CustomAuthLoginModule extends AppservPasswordLoginModule {
 
-  /*
+  /**
    * Adapted from
    * http://grepcode.com/file/repo1.maven.org/maven2/org.glassfish.security/security/3.0.1/com/sun/enterprise/security/auth/realm/jdbc/JDBCRealm.java
    */
+ 
   @Override
   protected void authenticateUser() throws LoginException {
     if (!(_currentRealm instanceof CustomAuthRealm)) {

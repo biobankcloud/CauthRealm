@@ -13,8 +13,6 @@ import com.sun.enterprise.universal.GFBase64Encoder;
 import com.sun.enterprise.util.Utility;
 import com.yubico.base.Pof;
 import com.yubico.base.Token;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.security.GeneralSecurityException;
@@ -36,7 +34,6 @@ import java.util.Properties;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.naming.NamingException;
@@ -48,10 +45,6 @@ import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.utilities.BuilderHelper;
 
-/**
- *
- * @author Ali Gholami <gholami@pdc.kth.se>
- */
 @Service(name = "CustomAuthRealm")
 public class CustomAuthRealm extends AppservRealm {
 

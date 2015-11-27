@@ -1,19 +1,7 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package se.kth.bbc.crealm;
 
-/**
- *
- * @author Ali Gholami <gholami@pdc.kth.se>
- */
 public enum PeopleAccountStatus {
 
-  // Status of new Yubikey users requests
-// Status of new Yubikey users requests
-// Status of new Yubikey users requests
 // Status of new Yubikey users requests
   YUBIKEY_ACCOUNT_INACTIVE(1),
 
