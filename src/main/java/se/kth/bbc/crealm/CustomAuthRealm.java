@@ -101,7 +101,7 @@ public class CustomAuthRealm extends AppservRealm {
           = "group-table-user-name-column";
   public static final String PARAM_USER_STATUS = "user-status-column";
   public static final String PARAM_YUBIKEY_TABLE = "yubikey-table";
-  
+
   public static final String PARAM_VARIABLES_TABLE = "variables-table";
 
   /*
@@ -128,9 +128,9 @@ public class CustomAuthRealm extends AppservRealm {
   private String groupQuery = null;
   private String yubikeyUpdateQuery = null;
   private String selectYubikey = null;
-  
+
   private String selectAuthMethod = null;
-  
+
   private MessageDigest md = null;
   Properties prop = null;
 
@@ -139,27 +139,6 @@ public class CustomAuthRealm extends AppservRealm {
   @Override
   public String getAuthType() {
     return AUTH_TYPE; //To change body of generated methods, choose Tools | Templates.
-  }
-
-  public String[] authenticate(String username, String password) {
-
-    String[] groups = null;
-    // make a yubikey check
-    if (password.endsWith(YUBIKEY_USER_MARKER)) {
-      String hpwd = password.substring(0, password.length()
-              - YUBIKEY_USER_MARKER.length());
-      if (isValidYubikeyUser(username, hpwd)) {
-        groups = findGroups(username);
-        groups = addAssignGroups(groups);
-        setGroupNames(username, groups);
-      }
-
-    } else if (isValidMobileUser(username, password)) {
-      groups = findGroups(username);
-      groups = addAssignGroups(groups);
-      setGroupNames(username, groups);
-    }
-    return groups;
   }
 
   /**
@@ -188,7 +167,7 @@ public class CustomAuthRealm extends AppservRealm {
             PARAM_GROUP_TABLE_USER_NAME_COLUMN, userNameColumn);
     String userActiveColumn = props.getProperty(PARAM_USER_STATUS);
     String yubikeyTable = props.getProperty(PARAM_YUBIKEY_TABLE);
-    
+
     String variablesTable = props.getProperty(PARAM_VARIABLES_TABLE);
 
     /*
@@ -206,43 +185,34 @@ public class CustomAuthRealm extends AppservRealm {
     cr = (ActiveDescriptor<ConnectorRuntime>) Util.getDefaultHabitat().
             getBestDescriptor(BuilderHelper.createContractFilter(
                             ConnectorRuntime.class.getName()));
-    /*
-    // load the properties to enable/disable the realm
-    prop = new Properties();
-    try {
-      InputStream inputStream
-              = getClass().getClassLoader().getResourceAsStream(
-                      "cauth.properties");
-      prop.load(inputStream);
-    } catch (IOException ex) {
-      Logger.getLogger(CustomAuthRealm.class.getName()).log(Level.SEVERE, null,
-              ex);
-    }*/
+
     if (jaasCtx == null) {
       String msg = sm.getString(
-              "realm.missingprop", IASRealm.JAAS_CONTEXT_PARAM,
+              "realm. missing JaaS context", IASRealm.JAAS_CONTEXT_PARAM,
               "CustomAuthRealm");
       throw new BadRealmException(msg);
     }
 
     if (dsJndi == null) {
       String msg = sm.getString(
-              "realm.missingprop", PARAM_DATASOURCE_JNDI, "CustomAuthRealm");
+              "realm. missing data source ", PARAM_DATASOURCE_JNDI,
+              "CustomAuthRealm");
       throw new BadRealmException(msg);
     }
     if (userTable == null) {
       String msg = sm.getString(
-              "realm.missingprop", PARAM_USER_TABLE, "CustomAuthRealm");
+              "realm.missing user table", PARAM_USER_TABLE, "CustomAuthRealm");
       throw new BadRealmException(msg);
     }
     if (groupTable == null) {
       String msg = sm.getString(
-              "realm.missingprop", PARAM_GROUP_TABLE, "CustomAuthRealm");
+              "realm.missing gprop table", PARAM_GROUP_TABLE, "CustomAuthRealm");
       throw new BadRealmException(msg);
     }
     if (userNameColumn == null) {
       String msg = sm.getString(
-              "realm.missingprop", PARAM_USER_NAME_COLUMN, "CustomAuthRealm");
+              "realm missing username columns", PARAM_USER_NAME_COLUMN,
+              "CustomAuthRealm");
       throw new BadRealmException(msg);
     }
     if (passwordColumn == null) {
@@ -271,15 +241,15 @@ public class CustomAuthRealm extends AppservRealm {
             + "high = ?, low = ?, session_use = ? WHERE public_id = ?";
 
     selectYubikey = "SELECT * FROM " + yubikeyTable + " WHERE public_id = ?";
-    
-    selectAuthMethod = "SELECT value FROM " + variablesTable + " WHERE id = 'twofactor_auth'";
 
+    selectAuthMethod = "SELECT value FROM " + variablesTable
+            + " WHERE id = 'twofactor_auth'";
 
     if (!NONE.equalsIgnoreCase(digestAlgorithm)) {
       try {
         md = MessageDigest.getInstance(digestAlgorithm);
       } catch (NoSuchAlgorithmException e) {
-        String msg = sm.getString("cauth realm.not support digest alg",
+        String msg = sm.getString("cauth realm does not support digest alg",
                 digestAlgorithm);
         throw new BadRealmException(msg);
       }
@@ -312,241 +282,6 @@ public class CustomAuthRealm extends AppservRealm {
 
   }
 
-
-  private boolean isValidYubikeyUser(String user, String password) {
-    Connection connection = null;
-    PreparedStatement statement = null;
-    ResultSet rs = null;
-    boolean valid = false;
-
-    try {
-
-      // Get the original password
-      String hpwd = hashPassword(password.substring(0, password.length() - 44));
-
-      // Get the 44 digit OTP code
-      String otpCode = password.substring(password.length() - 44).toLowerCase();
-
-      int len = otpCode.length();
-      int split = len - 32;
-      
-      String mode = "false";
-      
-      // Get connedcted to DB and find the user
-      connection = getConnection();
-
-      statement = connection.prepareStatement(passwordQuery);
-
-      statement.setString(1, user);
-      rs = statement.executeQuery();
-      
-      
-      
-      String pwd = null;
-      if (rs.next()) {
-        // Get the user's credentials
-        pwd = rs.getString(1);
-
-        int status = Integer.parseInt(rs.getString(3));
-        rs.close();
-        statement.close();
-        
-        // get the auth mode for two factor auth
-        statement = connection.prepareStatement(selectAuthMethod);
-        
-        rs = statement.executeQuery();
-        if(rs.next()){
-         
-           mode= rs.getString(1);
-         }
-        
-        if (HEX.equalsIgnoreCase(getProperty(PARAM_ENCODING))) {
-          // for only normal password
-          if (mode.equals("false")) {
-            valid = pwd.equalsIgnoreCase(hpwd);
-          } else {
-            valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
-                    0, 12), otpCode.substring(split))
-                    && (status == PeopleAccountStatus.ACCOUNT_ACTIVE.getValue()
-                    || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
-          }
-        } else {
-          // for only normal password
-          if (mode.equals("false")) {
-            valid = pwd.equalsIgnoreCase(hpwd);
-          } else {
-            valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
-                    0, 12), otpCode.substring(split))
-                    && (status == PeopleAccountStatus.ACCOUNT_ACTIVE.getValue()
-                    || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
-          }
-        }
-      }
-    } catch (SQLException ex) {
-      _logger.log(Level.SEVERE, "cauthrealm.invalid user reason 5",
-              new String[]{user, ex.toString()});
-      if (_logger.isLoggable(Level.FINE)) {
-        _logger.log(Level.FINE, "Cannot validate user", ex);
-      }
-      return false;
-    } catch (CharacterCodingException | LoginException | NumberFormatException ex) {
-      _logger.log(Level.SEVERE, "cauth realm.invalid user 6", user);
-      if (_logger.isLoggable(Level.FINE)) {
-        _logger.log(Level.FINE, "Cannot validate user", ex);
-      }
-      return false;
-    } finally {
-      close(connection, statement, rs);
-    }
-    return valid;
-  }
-
-  private boolean isValidMobileUser(String user, String password) {
-    Connection connection = null;
-    PreparedStatement statement = null;
-    ResultSet rs = null;
-
-    boolean valid = false;
-    String mode = "false";
-    
-    try {
-
-      // Get the original password
-      String hpwd = hashPassword(password.substring(0, password.length() - 6));
-
-      // Get the 6 digit OTP code
-      String otpCode = password.substring(password.length() - 6);
-
-      // Get connedcted to DB and find the user
-      connection = getConnection();
-      statement = connection.prepareStatement(passwordQuery);
-      statement.setString(1, user);
-      rs = statement.executeQuery();
-      String pwd = null;
-      if (rs.next()) {
-        // Get the user's credentials
-        pwd = rs.getString(1);
-        String otp = rs.getString(2);
-        int status = Integer.parseInt(rs.getString(3));
-        
-        rs.close();
-        statement.close();
-        
-         
-        // get the auth mode for two factor auth
-        statement = connection.prepareStatement(selectAuthMethod);
-       
-        rs = statement.executeQuery();
-        
-        if(rs.next()){
-           mode= rs.getString(1);
-         }
-        
-        
-        
-        if (HEX.equalsIgnoreCase(getProperty(PARAM_ENCODING))) {
-          // for only normal password
-          if (mode.equals("false")) {
-            valid = pwd.equalsIgnoreCase(hpwd);
-          } else {
-            valid = pwd.equalsIgnoreCase(hpwd)
-                    && verifyCode(otp, Integer.parseInt(otpCode), getTimeIndex(),
-                            5)
-                    && ((status == PeopleAccountStatus.ACCOUNT_ACTIVE.getValue())
-                    || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
-          }
-        } else {
-          // for only normal password
-          if (mode.equals("false")) {
-            valid = pwd.equalsIgnoreCase(hpwd);
-          } else {
-            valid = pwd.equalsIgnoreCase(hpwd)
-                    && verifyCode(otp, Integer.parseInt(otpCode.trim()),
-                            getTimeIndex(), 5)
-                    && ((status == PeopleAccountStatus.ACCOUNT_ACTIVE.getValue())
-                    || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
-          }
-        }
-      }
-    } catch (SQLException ex) {
-      _logger.log(Level.SEVERE, "cauth realm.invalid user reason 1",
-              new String[]{user, ex.toString()});
-      if (_logger.isLoggable(Level.FINE)) {
-        _logger.log(Level.FINE, "Cannot validate user", ex);
-      }
-      return false;
-    } catch (CharacterCodingException | LoginException | NumberFormatException |
-            NoSuchAlgorithmException | InvalidKeyException ex) {
-      _logger.log(Level.SEVERE, "cauth realm.invalid user 2", user);
-      if (_logger.isLoggable(Level.FINE)) {
-        _logger.log(Level.FINE, "Cannot validate user", ex);
-      }
-      return false;
-    } finally {
-      close(connection, statement, rs);
-    }
-    return valid;
-  }
-
-  private Password getPassword(String username) {
-
-    Connection connection = null;
-    PreparedStatement statement = null;
-    ResultSet rs = null;
-    boolean valid = false;
-
-    try {
-      connection = getConnection();
-      statement = connection.prepareStatement(passwordQuery);
-      statement.setString(1, username);
-      rs = statement.executeQuery();
-
-      if (rs.next()) {
-        // Split the merged password and otp
-        final String pwd = rs.getString(1);
-        final String otp = rs.getString(2).trim();
-        if (!PRE_HASHED.equalsIgnoreCase(getProperty(PARAM_ENCODING))) {
-          return new Password() {
-
-            @Override
-            public byte[] getValue() {
-              return pwd.getBytes();
-            }
-
-            @Override
-            public int getType() {
-              return Password.PLAIN_TEXT;
-            }
-
-          };
-        } else {
-          return new Password() {
-
-            @Override
-            public byte[] getValue() {
-              return pwd.getBytes();
-            }
-
-            @Override
-            public int getType() {
-              return Password.HASHED;
-            }
-
-          };
-        }
-      }
-    } catch (LoginException | SQLException ex) {
-      _logger.log(Level.SEVERE, "cauth realm.invalid user", username);
-      if (_logger.isLoggable(Level.FINE)) {
-        _logger.log(Level.FINE, "Cannot validate user", ex);
-      }
-    } finally {
-      close(connection, statement, rs);
-    }
-    return null;
-
-  }
-
   @Override
   public Enumeration getGroupNames(String username)
           throws InvalidOperationException, NoSuchUserException {
@@ -575,7 +310,7 @@ public class CustomAuthRealm extends AppservRealm {
       final String[] groupArray = new String[groups.size()];
       return groups.toArray(groupArray);
     } catch (LoginException | SQLException ex) {
-      _logger.log(Level.SEVERE, "cauth realm.group error", user);
+      _logger.log(Level.SEVERE, "cauth realm group error", user);
       if (_logger.isLoggable(Level.FINE)) {
         _logger.log(Level.FINE, "Cannot load group", ex);
       }
@@ -604,96 +339,67 @@ public class CustomAuthRealm extends AppservRealm {
   }
 
   /**
-   * Verify the received user one time password code against the stored
-   * secret,
-   *
-   * @param secret
-   * @param code
-   * @param timeIndex
-   * @param variance
-   * @return
-   * @throws NoSuchAlgorithmException
-   * @throws InvalidKeyException
+   * Start Authentication*
    */
-  public static boolean verifyCode(String secret, long code, long timeIndex,
-          int variance)
-          throws NoSuchAlgorithmException, InvalidKeyException {
-    Base32 codec = new Base32();
-    byte[] decodedKey = codec.decode(secret);
-    for (int i = -variance; i <= variance; i++) {
-      if (getCode(decodedKey, timeIndex + i) == code) {
-        return true;
+  public String[] authenticate(String username, String password) {
+
+    String[] groups = null;
+
+    // make a yubikey check
+    if (password.endsWith(YUBIKEY_USER_MARKER)) {
+      String hpwd = password.substring(0, password.length()
+              - YUBIKEY_USER_MARKER.length());
+      if (isValidYubikeyUser(username, hpwd)) {
+        groups = findGroups(username);
+        groups = addAssignGroups(groups);
+        setGroupNames(username, groups);
       }
+
+    } else if (isValidMobileUser(username, password)) {
+      groups = findGroups(username);
+      groups = addAssignGroups(groups);
+      setGroupNames(username, groups);
     }
-    return false;
+    return groups;
   }
 
-  public static long getTimeIndex() {
-    return System.currentTimeMillis() / 1000 / 30;
-  }
+  private Connection getConnection() throws LoginException {
 
-  /**
-   * Generate the otp code according to some definitions.
-   *
-   * @param secret
-   * @param timeIndex
-   * @return
-   * @throws NoSuchAlgorithmException
-   * @throws InvalidKeyException
-   */
-  private static long getCode(byte[] secret, long timeIndex)
-          throws NoSuchAlgorithmException, InvalidKeyException {
-    SecretKeySpec signKey = new SecretKeySpec(secret, "HmacSHA1");
-    ByteBuffer buffer = ByteBuffer.allocate(8);
-    buffer.putLong(timeIndex);
-    byte[] timeBytes = buffer.array();
-    Mac mac = Mac.getInstance("HmacSHA1");
-    mac.init(signKey);
-    byte[] hash = mac.doFinal(timeBytes);
-    int offset = hash[19] & 0xf;
-    long truncatedHash = hash[offset] & 0x7f;
-    for (int i = 1; i < 4; i++) {
-      truncatedHash <<= 8;
-      truncatedHash |= hash[offset + i] & 0xff;
-    }
-    return (truncatedHash %= 1000000);
-  }
-
-  private boolean updateYubikeyOnTokenId(int sessionCounter, int hi, int lo,
-          int sessionUse, String public_id) {
-
-    Connection conn = null;
-    PreparedStatement stmt = null;
-    ResultSet rs = null;
+    final String dsJndi = this.getProperty(PARAM_DATASOURCE_JNDI);
     try {
+      String nonTxJndiName = dsJndi + "__nontx";
+      /*
+       * InitialContext ic = new InitialContext();
+       * final DataSource dataSource =
+       * //V3 Commented
+       * (DataSource)ConnectorRuntime.getRuntime().lookupNonTxResource(dsJndi,false);
+       * //replacement code suggested by jagadish
+       * (DataSource)ic.lookup(nonTxJndiName);
+       */
+      ConnectorRuntime connectorRuntime = Util.getDefaultHabitat().
+              getServiceHandle(cr).getService();
+      final DataSource dataSource
+              = (DataSource) connectorRuntime.lookupNonTxResource(dsJndi, false);
 
-      conn = getConnection();
-
-      stmt = conn.prepareStatement(yubikeyUpdateQuery);
-      long l = new java.util.Date().getTime();
-      stmt.setTimestamp(1, new java.sql.Timestamp(l));
-      stmt.setInt(2, sessionCounter);
-      stmt.setInt(3, hi);
-      stmt.setInt(4, lo);
-      stmt.setInt(5, sessionUse);
-      stmt.setString(6, public_id);
-      int num = stmt.executeUpdate();
-      if (num < 1) {
-        throw new SQLException("Internal error, num=" + num);
-      }
-    } catch (SQLException | LoginException ex) {
-      Logger.getLogger(CustomAuthRealm.class.getName()).log(Level.SEVERE, null,
-              ex);
-      return false;
-    } finally {
-      close(conn, stmt, rs);
+      //(DataSource)ConnectorRuntime.getRuntime().lookupNonTxResource(dsJndi,false);
+      Connection connection = null;
+      connection = dataSource.getConnection();
+      return connection;
+    } catch (MultiException | NamingException | SQLException ex) {
+      String msg = sm.getString("cauth realm cant connect", dsJndi);
+      LoginException loginEx = new LoginException(msg);
+      loginEx.initCause(ex);
+      throw loginEx;
     }
 
-    return true;
   }
 
   /**
-   *
+   * Yubikey Authenticator *
+   */
+  /**
+   * Validate the OTP generated by the Yubikey device.
+   * <p>
    * @param public_id
    * @param otp
    * @return
@@ -759,8 +465,8 @@ public class CustomAuthRealm extends AppservRealm {
               public_id);
 
     } catch (SQLException | GeneralSecurityException ex) {
-      Logger.getLogger(CustomAuthRealm.class.getName()).log(Level.SEVERE, null,
-              ex);
+      _logger.log(Level.FINE, "Cannot validate OTP Yubikey", ex);
+
       return false;
     } finally {
       close(conn, stmt, rs);
@@ -775,11 +481,48 @@ public class CustomAuthRealm extends AppservRealm {
     return (int) (high << 8 | low);
   }
 
-  public String getTimeStamp() {
-    SimpleDateFormat sdf
-            = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'SSSS");
-    Date tmp = new Date();
-    return sdf.format(tmp);
+  /**
+   * Update the Yubikey table after each use of OTP.
+   * <p>
+   * @param sessionCounter
+   * @param hi
+   * @param lo
+   * @param sessionUse
+   * @param public_id
+   * @return
+   */
+  private boolean updateYubikeyOnTokenId(int sessionCounter, int hi, int lo,
+          int sessionUse, String public_id) {
+
+    Connection conn = null;
+    PreparedStatement stmt = null;
+    ResultSet rs = null;
+    try {
+
+      conn = getConnection();
+
+      stmt = conn.prepareStatement(yubikeyUpdateQuery);
+      long l = new java.util.Date().getTime();
+      stmt.setTimestamp(1, new java.sql.Timestamp(l));
+      stmt.setInt(2, sessionCounter);
+      stmt.setInt(3, hi);
+      stmt.setInt(4, lo);
+      stmt.setInt(5, sessionUse);
+      stmt.setString(6, public_id);
+      int num = stmt.executeUpdate();
+      if (num < 1) {
+        throw new SQLException("Internal Yubikey table update error, num=" + num);
+      }
+    } catch (SQLException | LoginException ex) {
+      _logger.log(Level.FINE,
+              "Cannot update Yubikey table after authentiating user", ex);
+
+      return false;
+    } finally {
+      close(conn, stmt, rs);
+    }
+
+    return true;
   }
 
   private byte[] hexStringToByteArray(String encoded) {
@@ -790,6 +533,7 @@ public class CustomAuthRealm extends AppservRealm {
 
     final byte result[] = new byte[encoded.length() / 2];
     final char enc[] = encoded.toCharArray();
+
     for (int i = 0; i < enc.length; i += 2) {
       StringBuilder curr = new StringBuilder(2);
       curr.append(enc[i]).append(enc[i + 1]);
@@ -797,37 +541,302 @@ public class CustomAuthRealm extends AppservRealm {
     }
     return result;
   }
-  
-  
-  private Connection getConnection() throws LoginException {
 
-    final String dsJndi = this.getProperty(PARAM_DATASOURCE_JNDI);
+  /**
+   * Get the password from the frontend and validate it.
+   * <p>
+   * @param user
+   * @param password
+   * @return
+   */
+  private boolean isValidYubikeyUser(String user, String password) {
+    Connection connection = null;
+    PreparedStatement statement = null;
+    ResultSet rs = null;
+    boolean valid = false;
+
     try {
-      String nonTxJndiName = dsJndi + "__nontx";
-      /*
-       * InitialContext ic = new InitialContext();
-       * final DataSource dataSource =
-       * //V3 Commented
-       * (DataSource)ConnectorRuntime.getRuntime().lookupNonTxResource(dsJndi,false);
-       * //replacement code suggested by jagadish
-       * (DataSource)ic.lookup(nonTxJndiName);
-       */
-      ConnectorRuntime connectorRuntime = Util.getDefaultHabitat().
-              getServiceHandle(cr).getService();
-      final DataSource dataSource
-              = (DataSource) connectorRuntime.lookupNonTxResource(dsJndi, false);
 
-      //(DataSource)ConnectorRuntime.getRuntime().lookupNonTxResource(dsJndi,false);
-      Connection connection = null;
-      connection = dataSource.getConnection();
-      return connection;
-    } catch (MultiException | NamingException | SQLException ex) {
-      String msg = sm.getString("cauth realm.cantconnect", dsJndi);
-      LoginException loginEx = new LoginException(msg);
-      loginEx.initCause(ex);
-      throw loginEx;
+      // Get the original password
+      String hpwd = hashPassword(password.substring(0, password.length() - 44));
+
+      // Get the 44 digit OTP code
+      String otpCode = password.substring(password.length() - 44).toLowerCase();
+
+      int len = otpCode.length();
+      int split = len - 32;
+
+      String mode = "false";
+
+      // Get connedcted to DB and find the user
+      connection = getConnection();
+
+      statement = connection.prepareStatement(passwordQuery);
+
+      statement.setString(1, user);
+      rs = statement.executeQuery();
+
+      String pwd = null;
+      if (rs.next()) {
+        // Get the user's credentials
+        pwd = rs.getString(1);
+
+        int status = Integer.parseInt(rs.getString(3));
+        rs.close();
+        statement.close();
+
+        // get the auth mode for two factor auth
+        statement = connection.prepareStatement(selectAuthMethod);
+
+        rs = statement.executeQuery();
+        if (rs.next()) {
+
+          mode = rs.getString(1);
+        }
+
+        if (HEX.equalsIgnoreCase(getProperty(PARAM_ENCODING))) {
+          // for only normal password
+          if (mode.equals("false")) {
+            valid = pwd.equalsIgnoreCase(hpwd);
+          } else {
+            valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
+                    0, 12), otpCode.substring(split))
+                    && (status == PeopleAccountStatus.ACCOUNT_ACTIVE.getValue()
+                    || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
+          }
+        } else {
+          // for only normal password
+          if (mode.equals("false")) {
+            valid = pwd.equalsIgnoreCase(hpwd);
+          } else {
+            valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
+                    0, 12), otpCode.substring(split))
+                    && (status == PeopleAccountStatus.ACCOUNT_ACTIVE.getValue()
+                    || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
+          }
+        }
+      }
+    } catch (SQLException ex) {
+      _logger.log(Level.SEVERE, "cauthrealm invalid Yubikey user step 5",
+              new String[]{user, ex.toString()});
+      if (_logger.isLoggable(Level.FINE)) {
+        _logger.log(Level.FINE, "Cannot validate Yubkiey user", ex);
+      }
+      return false;
+    } catch (CharacterCodingException | LoginException | NumberFormatException ex) {
+      _logger.log(Level.SEVERE, "cauth realm invalid Yubikey user", user);
+      if (_logger.isLoggable(Level.FINE)) {
+        _logger.log(Level.FINE, "Cannot validate Yubikeu user", ex);
+      }
+      return false;
+    } finally {
+      close(connection, statement, rs);
     }
+    return valid;
+  }
 
+  /**
+   * Mobile Authenticator *
+   */
+  /**
+   * Get the password from the frontend and validate it.
+   * <p>
+   * @param user
+   * @param password
+   * @return
+   */
+  private boolean isValidMobileUser(String user, String password) {
+    Connection connection = null;
+    PreparedStatement statement = null;
+    ResultSet rs = null;
+
+    boolean valid = false;
+    String mode = "false";
+
+    try {
+
+      // Get the original password
+      String hpwd = hashPassword(password.substring(0, password.length() - 6));
+
+      // Get the 6 digit OTP code
+      String otpCode = password.substring(password.length() - 6);
+
+      // Get connedcted to DB and find the user
+      connection = getConnection();
+      statement = connection.prepareStatement(passwordQuery);
+      statement.setString(1, user);
+      rs = statement.executeQuery();
+      String pwd = null;
+      if (rs.next()) {
+        // Get the user's credentials
+        pwd = rs.getString(1);
+        String otp = rs.getString(2);
+        int status = Integer.parseInt(rs.getString(3));
+
+        rs.close();
+        statement.close();
+
+        // get the auth mode for two factor auth
+        statement = connection.prepareStatement(selectAuthMethod);
+
+        rs = statement.executeQuery();
+
+        if (rs.next()) {
+          mode = rs.getString(1);
+        }
+
+        if (HEX.equalsIgnoreCase(getProperty(PARAM_ENCODING))) {
+          // for only normal password
+          if (mode.equals("false")) {
+            valid = pwd.equalsIgnoreCase(hpwd);
+          } else {
+            valid = pwd.equalsIgnoreCase(hpwd)
+                    && verifyCode(otp, Integer.parseInt(otpCode), getTimeIndex(),
+                            5)
+                    && ((status == PeopleAccountStatus.ACCOUNT_ACTIVE.getValue())
+                    || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
+          }
+        } else {
+          // for only normal password
+          if (mode.equals("false")) {
+            valid = pwd.equalsIgnoreCase(hpwd);
+          } else {
+            valid = pwd.equalsIgnoreCase(hpwd)
+                    && verifyCode(otp, Integer.parseInt(otpCode.trim()),
+                            getTimeIndex(), 5)
+                    && ((status == PeopleAccountStatus.ACCOUNT_ACTIVE.getValue())
+                    || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
+          }
+        }
+      }
+    } catch (SQLException ex) {
+      _logger.log(Level.SEVERE, "cauth realm invalid user reason: mobile",
+              new String[]{user, ex.toString()});
+      if (_logger.isLoggable(Level.FINE)) {
+        _logger.log(Level.FINE, "Cannot validate mobile user", ex);
+      }
+      return false;
+    } catch (CharacterCodingException | LoginException | NumberFormatException |
+            NoSuchAlgorithmException | InvalidKeyException ex) {
+      _logger.log(Level.SEVERE, "cauth realm mobile user char encoding", user);
+      if (_logger.isLoggable(Level.FINE)) {
+        _logger.log(Level.FINE, "Cannot validate mobile user", ex);
+      }
+      return false;
+    } finally {
+      close(connection, statement, rs);
+    }
+    return valid;
+  }
+
+  private Password getPassword(String username) {
+
+    Connection connection = null;
+    PreparedStatement statement = null;
+    ResultSet rs = null;
+    boolean valid = false;
+
+    try {
+      connection = getConnection();
+      statement = connection.prepareStatement(passwordQuery);
+      statement.setString(1, username);
+      rs = statement.executeQuery();
+
+      if (rs.next()) {
+        // Split the merged password and otp
+        final String pwd = rs.getString(1);
+        final String otp = rs.getString(2).trim();
+        if (!PRE_HASHED.equalsIgnoreCase(getProperty(PARAM_ENCODING))) {
+          return new Password() {
+
+            @Override
+            public byte[] getValue() {
+              return pwd.getBytes();
+            }
+
+            @Override
+            public int getType() {
+              return Password.PLAIN_TEXT;
+            }
+
+          };
+        } else {
+          return new Password() {
+
+            @Override
+            public byte[] getValue() {
+              return pwd.getBytes();
+            }
+
+            @Override
+            public int getType() {
+              return Password.HASHED;
+            }
+
+          };
+        }
+      }
+    } catch (LoginException | SQLException ex) {
+      _logger.log(Level.SEVERE, "cauth realm invalid user", username);
+      if (_logger.isLoggable(Level.FINE)) {
+        _logger.log(Level.FINE, "Cannot validate user", ex);
+      }
+    } finally {
+      close(connection, statement, rs);
+    }
+    return null;
+
+  }
+
+  public static boolean verifyCode(String secret, long code, long timeIndex,
+          int variance)
+          throws NoSuchAlgorithmException, InvalidKeyException {
+    Base32 codec = new Base32();
+    byte[] decodedKey = codec.decode(secret);
+    for (int i = -variance; i <= variance; i++) {
+      if (getCode(decodedKey, timeIndex + i) == code) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public static long getTimeIndex() {
+    return System.currentTimeMillis() / 1000 / 30;
+  }
+
+  /**
+   * Generate the otp code according to some definitions.
+   *
+   * @param secret
+   * @param timeIndex
+   * @return
+   * @throws NoSuchAlgorithmException
+   * @throws InvalidKeyException
+   */
+  private static long getCode(byte[] secret, long timeIndex)
+          throws NoSuchAlgorithmException, InvalidKeyException {
+    SecretKeySpec signKey = new SecretKeySpec(secret, "HmacSHA1");
+    ByteBuffer buffer = ByteBuffer.allocate(8);
+    buffer.putLong(timeIndex);
+    byte[] timeBytes = buffer.array();
+    Mac mac = Mac.getInstance("HmacSHA1");
+    mac.init(signKey);
+    byte[] hash = mac.doFinal(timeBytes);
+    int offset = hash[19] & 0xf;
+    long truncatedHash = hash[offset] & 0x7f;
+    for (int i = 1; i < 4; i++) {
+      truncatedHash <<= 8;
+      truncatedHash |= hash[offset + i] & 0xff;
+    }
+    return (truncatedHash %= 1000000);
+  }
+
+  public String getTimeStamp() {
+    SimpleDateFormat sdf
+            = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'SSSS");
+    Date tmp = new Date();
+    return sdf.format(tmp);
   }
 
   private String hashPassword(String password)
@@ -873,8 +882,8 @@ public class CustomAuthRealm extends AppservRealm {
     GFBase64Encoder encoder = new GFBase64Encoder();
     return encoder.encode(bytes);
   }
-  
-    private void close(Connection conn, PreparedStatement stmt,
+
+  private void close(Connection conn, PreparedStatement stmt,
           ResultSet rs) {
     if (rs != null) {
       try {
@@ -897,6 +906,5 @@ public class CustomAuthRealm extends AppservRealm {
       }
     }
   }
-
 
 }
