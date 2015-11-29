@@ -503,12 +503,12 @@ public class CustomAuthRealm extends AppservRealm {
       stmt.setInt(5, sessionUse);
       stmt.setString(6, public_id);
       int num = stmt.executeUpdate();
-      if (num < 1) {
-        throw new SQLException("Internal Yubikey table update error, num=" + num);
+      if (num != 1) {
+        throw new SQLException("Internal Yubikey table update error!");
       }
     } catch (SQLException | LoginException ex) {
-      _logger.log(Level.FINE,
-              "Cannot update Yubikey table after authentiating user", ex);
+      _logger.log(Level.SEVERE,
+              "Cannot update Yubikey table.", ex);
 
       return false;
     } finally {
