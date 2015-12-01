@@ -55,10 +55,6 @@ public class CustomAuthRealm extends AppservRealm {
    * https://weblogs.java.net/blog/evanx/archive/2012/11/07/google-authenticator-thus-enabled
    * and https://code.google.com/p/yubikey-server-j/
    */
-  /*
-   * To distinguish between Yubikey and Mobile users authentication
-   */
-  private final String YUBIKEY_USER_MARKER = "YUBIKEY_USER_MARKER";
 
   /*
    * TOTP default time interval
@@ -339,9 +335,9 @@ public class CustomAuthRealm extends AppservRealm {
     String[] groups = null;
 
     // make a yubikey check
-    if (password.endsWith(YUBIKEY_USER_MARKER)) {
+    if (password.endsWith(AuthenticationConstants.YUBIKEY_USER_MARKER)) {
       String hpwd = password.substring(0, password.length()
-              - YUBIKEY_USER_MARKER.length());
+              - AuthenticationConstants.YUBIKEY_USER_MARKER.length());
       if (isValidYubikeyUser(username, hpwd)) {
         groups = findGroups(username);
         groups = addAssignGroups(groups);
@@ -649,10 +645,10 @@ public class CustomAuthRealm extends AppservRealm {
     try {
 
       // Get the original password
-      String hpwd = hashPassword(password.substring(0, password.length() - 6));
+      String hpwd = hashPassword(password.substring(0, password.length() - AuthenticationConstants.MOBILE_OTP_PADDING.length()));
 
       // Get the 6 digit OTP code
-      String otpCode = password.substring(password.length() - 6);
+      String otpCode = password.substring(password.length() - AuthenticationConstants.MOBILE_OTP_PADDING.length());
 
       // Get connedcted to DB and find the user
       connection = getConnection();
