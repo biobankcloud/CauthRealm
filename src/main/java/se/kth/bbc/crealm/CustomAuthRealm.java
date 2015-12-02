@@ -190,7 +190,7 @@ public class CustomAuthRealm extends AppservRealm {
     }
     if (userTable == null) {
       String msg = sm.getString(
-              "realm.missing user table", PARAM_USER_TABLE, "CustomAuthRealm");
+              "realm. missing user table", PARAM_USER_TABLE, "CustomAuthRealm");
       throw new BadRealmException(msg);
     }
     if (groupTable == null) {
@@ -200,18 +200,18 @@ public class CustomAuthRealm extends AppservRealm {
     }
     if (userNameColumn == null) {
       String msg = sm.getString(
-              "realm missing username columns", PARAM_USER_NAME_COLUMN,
+              "realm. missing username columns", PARAM_USER_NAME_COLUMN,
               "CustomAuthRealm");
       throw new BadRealmException(msg);
     }
     if (passwordColumn == null) {
       String msg = sm.getString(
-              "realm.missingprop", PARAM_PASSWORD_COLUMN, "CustomAuthRealm");
+              "realm. missing prop", PARAM_PASSWORD_COLUMN, "CustomAuthRealm");
       throw new BadRealmException(msg);
     }
     if (groupNameColumn == null) {
       String msg = sm.getString(
-              "realm.missingprop", PARAM_GROUP_NAME_COLUMN, "CustomAuthRealm");
+              "realm. missing prop", PARAM_GROUP_NAME_COLUMN, "CustomAuthRealm");
       throw new BadRealmException(msg);
     }
     if (yubikeyTable == null) {
@@ -299,7 +299,7 @@ public class CustomAuthRealm extends AppservRealm {
       final String[] groupArray = new String[groups.size()];
       return groups.toArray(groupArray);
     } catch (LoginException | SQLException ex) {
-      _logger.log(Level.SEVERE, "cauth realm group error", user);
+      _logger.log(Level.SEVERE, "CAuth realm group error", user);
       if (_logger.isLoggable(Level.FINE)) {
         _logger.log(Level.FINE, "Cannot load group", ex);
       }
@@ -329,6 +329,9 @@ public class CustomAuthRealm extends AppservRealm {
 
   /**
    * Start Authentication*
+   * @param username
+   * @param password
+   * @return 
    */
   public String[] authenticate(String username, String password) {
 
@@ -371,11 +374,9 @@ public class CustomAuthRealm extends AppservRealm {
               = (DataSource) connectorRuntime.lookupNonTxResource(dsJndi, false);
 
       //(DataSource)ConnectorRuntime.getRuntime().lookupNonTxResource(dsJndi,false);
-      Connection connection = null;
-      connection = dataSource.getConnection();
-      return connection;
+        return dataSource.getConnection();
     } catch (MultiException | NamingException | SQLException ex) {
-      String msg = sm.getString("cauth realm cant connect", dsJndi);
+      String msg = sm.getString("CAuth realm cant connect", dsJndi);
       LoginException loginEx = new LoginException(msg);
       loginEx.initCause(ex);
       throw loginEx;
@@ -499,12 +500,12 @@ public class CustomAuthRealm extends AppservRealm {
       stmt.setInt(5, sessionUse);
       stmt.setString(6, public_id);
       int num = stmt.executeUpdate();
-      if (num < 1) {
-        throw new SQLException("Internal Yubikey table update error, num=" + num);
+      if (num != 1) {
+        throw new SQLException("Internal Yubikey table update error!");
       }
     } catch (SQLException | LoginException ex) {
-      _logger.log(Level.FINE,
-              "Cannot update Yubikey table after authentiating user", ex);
+      _logger.log(Level.SEVERE,
+              "Cannot update Yubikey table.", ex);
 
       return false;
     } finally {
@@ -606,14 +607,14 @@ public class CustomAuthRealm extends AppservRealm {
         }
       }
     } catch (SQLException ex) {
-      _logger.log(Level.SEVERE, "cauthrealm invalid Yubikey user step 5",
+      _logger.log(Level.SEVERE, "CAuth realm invalid Yubikey user step 5",
               new String[]{user, ex.toString()});
       if (_logger.isLoggable(Level.FINE)) {
         _logger.log(Level.FINE, "Cannot validate Yubkiey user", ex);
       }
       return false;
     } catch (CharacterCodingException | LoginException | NumberFormatException ex) {
-      _logger.log(Level.SEVERE, "cauth realm invalid Yubikey user", user);
+      _logger.log(Level.SEVERE, "CAuth realm invalid Yubikey user", user);
       if (_logger.isLoggable(Level.FINE)) {
         _logger.log(Level.FINE, "Cannot validate Yubikeu user", ex);
       }
@@ -699,7 +700,7 @@ public class CustomAuthRealm extends AppservRealm {
         }
       }
     } catch (SQLException ex) {
-      _logger.log(Level.SEVERE, "cauth realm invalid user reason: mobile",
+      _logger.log(Level.SEVERE, "CAuth realm invalid user reason: mobile",
               new String[]{user, ex.toString()});
       if (_logger.isLoggable(Level.FINE)) {
         _logger.log(Level.FINE, "Cannot validate mobile user", ex);
@@ -707,7 +708,7 @@ public class CustomAuthRealm extends AppservRealm {
       return false;
     } catch (CharacterCodingException | LoginException | NumberFormatException |
             NoSuchAlgorithmException | InvalidKeyException ex) {
-      _logger.log(Level.SEVERE, "cauth realm mobile user char encoding", user);
+      _logger.log(Level.SEVERE, "CAuth realm mobile user char encoding", user);
       if (_logger.isLoggable(Level.FINE)) {
         _logger.log(Level.FINE, "Cannot validate mobile user", ex);
       }
