@@ -410,7 +410,7 @@ public class CustomAuthRealm extends AppservRealm {
       if (!rs.first()) {
         return valid;
       }
-      if (rs.getInt("status") != PeopleAccountStatus.ACCOUNT_ACTIVE.getValue()) {
+      if (rs.getInt("status") != PeopleAccountStatus.ACCOUNT_ACTIVEATED.getValue()) {
         return valid;
       }
 
@@ -591,7 +591,7 @@ public class CustomAuthRealm extends AppservRealm {
           } else {
             valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
                     0, 12), otpCode.substring(split))
-                    && (status == PeopleAccountStatus.ACCOUNT_ACTIVE.getValue()
+                    && (status == PeopleAccountStatus.ACCOUNT_ACTIVEATED.getValue()
                     || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
           }
         } else {
@@ -601,7 +601,7 @@ public class CustomAuthRealm extends AppservRealm {
           } else {
             valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
                     0, 12), otpCode.substring(split))
-                    && (status == PeopleAccountStatus.ACCOUNT_ACTIVE.getValue()
+                    && (status == PeopleAccountStatus.ACCOUNT_ACTIVEATED.getValue()
                     || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
           }
         }
@@ -683,7 +683,7 @@ public class CustomAuthRealm extends AppservRealm {
             valid = pwd.equalsIgnoreCase(hpwd)
                     && verifyCode(otp, Integer.parseInt(otpCode), getTimeIndex(),
                             5)
-                    && ((status == PeopleAccountStatus.ACCOUNT_ACTIVE.getValue())
+                    && ((status == PeopleAccountStatus.ACCOUNT_ACTIVEATED.getValue())
                     || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
           }
         } else {
@@ -694,7 +694,7 @@ public class CustomAuthRealm extends AppservRealm {
             valid = pwd.equalsIgnoreCase(hpwd)
                     && verifyCode(otp, Integer.parseInt(otpCode.trim()),
                             getTimeIndex(), 5)
-                    && ((status == PeopleAccountStatus.ACCOUNT_ACTIVE.getValue())
+                    && ((status == PeopleAccountStatus.ACCOUNT_ACTIVEATED.getValue())
                     || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
           }
         }

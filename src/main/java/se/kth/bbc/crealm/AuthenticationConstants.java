@@ -28,4 +28,8 @@ public final class AuthenticationConstants {
   //hopsworks user prefix username prefix
   public static final String USERNAME_PREFIX = "meb";
   
+    // Strating user id from 1000 to create a POSIX compliant username: meb1000
+  public static int STARTING_USER = 1000;
+  
+  public static int PASSWORD_LENGTH = 6;
 }
