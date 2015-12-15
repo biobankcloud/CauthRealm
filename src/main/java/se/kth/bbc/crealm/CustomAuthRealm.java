@@ -427,7 +427,7 @@ public class CustomAuthRealm extends AppservRealm {
       int seenHi = rs.getInt("high");
 
       int seenSessionUse = rs.getInt("session_use");
-      
+
       Token t;
       t = Pof.parse(otp, hexStringToByteArray(secret));
       int sessionCounter = toInt(t.getSessionCounter());
@@ -553,10 +553,10 @@ public class CustomAuthRealm extends AppservRealm {
     boolean valid = false;
 
     try {
-      _logger.info(user + " "+password);
+
       // Get the original password
       String hpwd = hashPassword(password.substring(0, password.length() - 44));
-      
+
       // Get the 44 digit OTP code
       String otpCode = password.substring(password.length() - 44).toLowerCase();
 
@@ -577,15 +577,16 @@ public class CustomAuthRealm extends AppservRealm {
         pwd = rs.getString(1);
         int status = Integer.parseInt(rs.getString(3));
 
-                
         if (HEX.equalsIgnoreCase(getProperty(PARAM_ENCODING))) {
           // for only normal password
+          
           valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
                   0, 12), otpCode.substring(split))
                   && (status == PeopleAccountStatus.ACCOUNT_ACTIVEATED.
                   getValue()
                   || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
         } else {
+
           valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
                   0, 12), otpCode.substring(split))
                   && (status == PeopleAccountStatus.ACCOUNT_ACTIVEATED.
