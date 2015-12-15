@@ -41,6 +41,7 @@ import javax.security.auth.login.LoginException;
 import org.jvnet.hk2.annotations.Service;
 import javax.sql.DataSource;
 import org.apache.commons.codec.binary.Base32;
+import static org.eclipse.persistence.expressions.ExpressionOperator.today;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.utilities.BuilderHelper;
@@ -492,8 +493,8 @@ public class CustomAuthRealm extends AppservRealm {
       conn = getConnection();
 
       stmt = conn.prepareStatement(yubikeyUpdateQuery);
-      long l = new java.util.Date().getTime();
-      stmt.setTimestamp(1, new java.sql.Timestamp(l));
+
+      stmt.setTimestamp(1, getCurrentTimeStamp());
       stmt.setInt(2, sessionCounter);
       stmt.setInt(3, hi);
       stmt.setInt(4, lo);
@@ -708,7 +709,7 @@ public class CustomAuthRealm extends AppservRealm {
       return false;
     } catch (CharacterCodingException | LoginException | NumberFormatException |
             NoSuchAlgorithmException | InvalidKeyException ex) {
-      _logger.log(Level.SEVERE, "CAuth realm mobile user char encoding", user);
+      _logger.log(Level.SEVERE, "CAuth realm mobile user char encoding or authentication mode is set wrong.", user);
       if (_logger.isLoggable(Level.FINE)) {
         _logger.log(Level.FINE, "Cannot validate mobile user", ex);
       }
@@ -897,4 +898,11 @@ public class CustomAuthRealm extends AppservRealm {
     }
   }
 
+  
+  private static java.sql.Timestamp getCurrentTimeStamp() {
+
+	java.util.Date today = new java.util.Date();
+	return new java.sql.Timestamp(today.getTime());
+
+}
 }
