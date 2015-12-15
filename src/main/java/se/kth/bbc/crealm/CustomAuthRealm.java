@@ -417,7 +417,7 @@ public class CustomAuthRealm extends AppservRealm {
               getValue()) {
         return valid;
       }
-
+      
       String secret = rs.getString("aes_secret");
 
       int seenSessionCounter = rs.getInt("counter");
@@ -457,10 +457,10 @@ public class CustomAuthRealm extends AppservRealm {
       if (scDiff == 0 && suDiff == 0 && hiDiff == 0 && loDiff == 0) {
         return valid;
       }
+   
 
       valid = updateYubikeyOnTokenId(sessionCounter, hi, lo, sessionUse,
               public_id);
-
     } catch (SQLException | GeneralSecurityException ex) {
       _logger.log(Level.FINE, "Cannot validate OTP Yubikey", ex);
 
@@ -510,6 +510,7 @@ public class CustomAuthRealm extends AppservRealm {
       if (num != 1) {
         throw new SQLException("Internal Yubikey table update error!");
       }
+      
     } catch (SQLException | LoginException ex) {
       _logger.log(Level.SEVERE,
               "Cannot update Yubikey table.", ex);
@@ -562,7 +563,7 @@ public class CustomAuthRealm extends AppservRealm {
 
       int len = otpCode.length();
       int split = len - 32;
-
+      
       // Get connedcted to DB and find the user
       connection = getConnection();
 
