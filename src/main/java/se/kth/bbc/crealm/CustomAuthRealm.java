@@ -34,6 +34,7 @@ import java.util.Properties;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.naming.NamingException;
@@ -41,7 +42,6 @@ import javax.security.auth.login.LoginException;
 import org.jvnet.hk2.annotations.Service;
 import javax.sql.DataSource;
 import org.apache.commons.codec.binary.Base32;
-import static org.eclipse.persistence.expressions.ExpressionOperator.today;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.utilities.BuilderHelper;
@@ -329,10 +329,12 @@ public class CustomAuthRealm extends AppservRealm {
   }
 
   /**
-   * Start Authentication*
+   * Start Authentication
+   * <p>
+   *
    * @param username
    * @param password
-   * @return 
+   * @return
    */
   public String[] authenticate(String username, String password) {
 
@@ -375,7 +377,7 @@ public class CustomAuthRealm extends AppservRealm {
               = (DataSource) connectorRuntime.lookupNonTxResource(dsJndi, false);
 
       //(DataSource)ConnectorRuntime.getRuntime().lookupNonTxResource(dsJndi,false);
-        return dataSource.getConnection();
+      return dataSource.getConnection();
     } catch (MultiException | NamingException | SQLException ex) {
       String msg = sm.getString("CAuth realm cant connect", dsJndi);
       LoginException loginEx = new LoginException(msg);
@@ -411,17 +413,21 @@ public class CustomAuthRealm extends AppservRealm {
       if (!rs.first()) {
         return valid;
       }
-      if (rs.getInt("status") != PeopleAccountStatus.ACCOUNT_ACTIVEATED.getValue()) {
+      if (rs.getInt("status") != PeopleAccountStatus.ACCOUNT_ACTIVEATED.
+              getValue()) {
         return valid;
       }
 
       String secret = rs.getString("aes_secret");
 
       int seenSessionCounter = rs.getInt("counter");
-      int seenHi = rs.getInt("high");
-      int seenLo = rs.getInt("low");
-      int seenSessionUse = rs.getInt("session_use");
 
+      int seenLo = rs.getInt("low");
+
+      int seenHi = rs.getInt("high");
+
+      int seenSessionUse = rs.getInt("session_use");
+      
       Token t;
       t = Pof.parse(otp, hexStringToByteArray(secret));
       int sessionCounter = toInt(t.getSessionCounter());
@@ -547,17 +553,15 @@ public class CustomAuthRealm extends AppservRealm {
     boolean valid = false;
 
     try {
-
+      _logger.info(user + " "+password);
       // Get the original password
       String hpwd = hashPassword(password.substring(0, password.length() - 44));
-
+      
       // Get the 44 digit OTP code
       String otpCode = password.substring(password.length() - 44).toLowerCase();
 
       int len = otpCode.length();
       int split = len - 32;
-
-      String mode = "false";
 
       // Get connedcted to DB and find the user
       connection = getConnection();
@@ -571,40 +575,22 @@ public class CustomAuthRealm extends AppservRealm {
       if (rs.next()) {
         // Get the user's credentials
         pwd = rs.getString(1);
-
         int status = Integer.parseInt(rs.getString(3));
-        rs.close();
-        statement.close();
 
-        // get the auth mode for two factor auth
-        statement = connection.prepareStatement(selectAuthMethod);
-
-        rs = statement.executeQuery();
-        if (rs.next()) {
-
-          mode = rs.getString(1);
-        }
-
+                
         if (HEX.equalsIgnoreCase(getProperty(PARAM_ENCODING))) {
           // for only normal password
-          if (mode.equals("false")) {
-            valid = pwd.equalsIgnoreCase(hpwd);
-          } else {
-            valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
-                    0, 12), otpCode.substring(split))
-                    && (status == PeopleAccountStatus.ACCOUNT_ACTIVEATED.getValue()
-                    || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
-          }
+          valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
+                  0, 12), otpCode.substring(split))
+                  && (status == PeopleAccountStatus.ACCOUNT_ACTIVEATED.
+                  getValue()
+                  || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
         } else {
-          // for only normal password
-          if (mode.equals("false")) {
-            valid = pwd.equalsIgnoreCase(hpwd);
-          } else {
-            valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
-                    0, 12), otpCode.substring(split))
-                    && (status == PeopleAccountStatus.ACCOUNT_ACTIVEATED.getValue()
-                    || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
-          }
+          valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
+                  0, 12), otpCode.substring(split))
+                  && (status == PeopleAccountStatus.ACCOUNT_ACTIVEATED.
+                  getValue()
+                  || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
         }
       }
     } catch (SQLException ex) {
@@ -647,10 +633,12 @@ public class CustomAuthRealm extends AppservRealm {
     try {
 
       // Get the original password
-      String hpwd = hashPassword(password.substring(0, password.length() - AuthenticationConstants.MOBILE_OTP_PADDING.length()));
+      String hpwd = hashPassword(password.substring(0, password.length()
+              - AuthenticationConstants.MOBILE_OTP_PADDING.length()));
 
       // Get the 6 digit OTP code
-      String otpCode = password.substring(password.length() - AuthenticationConstants.MOBILE_OTP_PADDING.length());
+      String otpCode = password.substring(password.length()
+              - AuthenticationConstants.MOBILE_OTP_PADDING.length());
 
       // Get connedcted to DB and find the user
       connection = getConnection();
@@ -684,7 +672,8 @@ public class CustomAuthRealm extends AppservRealm {
             valid = pwd.equalsIgnoreCase(hpwd)
                     && verifyCode(otp, Integer.parseInt(otpCode), getTimeIndex(),
                             5)
-                    && ((status == PeopleAccountStatus.ACCOUNT_ACTIVEATED.getValue())
+                    && ((status == PeopleAccountStatus.ACCOUNT_ACTIVEATED.
+                    getValue())
                     || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
           }
         } else {
@@ -695,7 +684,8 @@ public class CustomAuthRealm extends AppservRealm {
             valid = pwd.equalsIgnoreCase(hpwd)
                     && verifyCode(otp, Integer.parseInt(otpCode.trim()),
                             getTimeIndex(), 5)
-                    && ((status == PeopleAccountStatus.ACCOUNT_ACTIVEATED.getValue())
+                    && ((status == PeopleAccountStatus.ACCOUNT_ACTIVEATED.
+                    getValue())
                     || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
           }
         }
@@ -709,7 +699,9 @@ public class CustomAuthRealm extends AppservRealm {
       return false;
     } catch (CharacterCodingException | LoginException | NumberFormatException |
             NoSuchAlgorithmException | InvalidKeyException ex) {
-      _logger.log(Level.SEVERE, "CAuth realm mobile user char encoding or authentication mode is set wrong.", user);
+      _logger.log(Level.SEVERE,
+              "CAuth realm mobile user char encoding or authentication mode is set wrong.",
+              user);
       if (_logger.isLoggable(Level.FINE)) {
         _logger.log(Level.FINE, "Cannot validate mobile user", ex);
       }
@@ -898,11 +890,10 @@ public class CustomAuthRealm extends AppservRealm {
     }
   }
 
-  
   private static java.sql.Timestamp getCurrentTimeStamp() {
 
-	java.util.Date today = new java.util.Date();
-	return new java.sql.Timestamp(today.getTime());
+    java.util.Date today = new java.util.Date();
+    return new java.sql.Timestamp(today.getTime());
 
-}
+  }
 }
