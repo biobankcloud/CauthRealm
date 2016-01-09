@@ -67,8 +67,3 @@ asadmin  create-auth-realm --classname se.kth.bbc.crealm.CustomAuthRealm --prope
 ### Restart the Glassfish server
 
 To enalbe the new configurations, the Glassfish server should be restarted either though command-line or the administrator GUI.
-
-
-## License
-
-This source code is licensed under the [Apache Version 2.0 license](http://www.apache.org/licenses/LICENSE-2.0).
