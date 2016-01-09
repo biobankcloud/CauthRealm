@@ -1,3 +1,7 @@
+## Intro
+
+This instructions describes step-by-step guidelines to deploy the custom two-factor authentication into a Glassfish instance.
+
 ### Build the Custom Realm:
 
  *  $git clone https://github.com/gholamiali/CauthRealm.git
@@ -61,3 +65,10 @@ asadmin  create-auth-realm --classname se.kth.bbc.crealm.CustomAuthRealm --prope
 
 
 ### Restart the Glassfish server
+
+To enalbe the new configurations, the Glassfish server should be restarted either though command-line or the administrator GUI.
+
+
+## License
+
+This source code is licensed under the [Apache Version 2.0 license](http://www.apache.org/licenses/LICENSE-2.0).
