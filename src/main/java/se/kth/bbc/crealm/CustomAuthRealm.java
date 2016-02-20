@@ -301,8 +301,10 @@ public class CustomAuthRealm extends AppservRealm {
       return groups.toArray(groupArray);
     } catch (LoginException | SQLException ex) {
       _logger.log(Level.SEVERE, "CAuth realm group error", user);
+      _logger.log(Level.SEVERE, "CAuth realm group error running query: ", groupQuery);
+      
       if (_logger.isLoggable(Level.FINE)) {
-        _logger.log(Level.FINE, "Cannot load group", ex);
+        _logger.log(Level.FINE, "Cannot load group", ex + " query: "+ groupQuery);
       }
       return null;
     } finally {
@@ -340,20 +342,15 @@ public class CustomAuthRealm extends AppservRealm {
 
     String[] groups = null;
 
-    // make a yubikey check
+    // make a yubikey otp check
     if (password.endsWith(AuthenticationConstants.YUBIKEY_USER_MARKER)) {
       String hpwd = password.substring(0, password.length()
               - AuthenticationConstants.YUBIKEY_USER_MARKER.length());
-      if (isValidYubikeyUser(username, hpwd)) {
+      if (isValidYubikeyUser(username, hpwd) || isValidMobileUser(username, password)) {
         groups = findGroups(username);
         groups = addAssignGroups(groups);
         setGroupNames(username, groups);
-      }
-
-    } else if (isValidMobileUser(username, password)) {
-      groups = findGroups(username);
-      groups = addAssignGroups(groups);
-      setGroupNames(username, groups);
+      } 
     }
     return groups;
   }
