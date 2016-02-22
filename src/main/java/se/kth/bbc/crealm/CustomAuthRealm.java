@@ -290,6 +290,7 @@ public class CustomAuthRealm extends AppservRealm {
     ResultSet rs = null;
     try {
       connection = getConnection();
+      _logger.log(Level.FINE, "CAuth acquired connection to DB");
       statement = connection.prepareStatement(groupQuery);
       statement.setString(1, user);
       rs = statement.executeQuery();
@@ -297,6 +298,7 @@ public class CustomAuthRealm extends AppservRealm {
       while (rs.next()) {
         groups.add(rs.getString(1));
       }
+      _logger.log(Level.FINE, "CAuth found num groups for user: " + groups.size());
       final String[] groupArray = new String[groups.size()];
       return groups.toArray(groupArray);
     } catch (LoginException | SQLException ex) {
@@ -342,16 +344,25 @@ public class CustomAuthRealm extends AppservRealm {
 
     String[] groups = null;
 
+
+    _logger.log(Level.INFO, "Authenticating: " + username);
+
     // make a yubikey otp check
     if (password.endsWith(AuthenticationConstants.YUBIKEY_USER_MARKER)) {
       String hpwd = password.substring(0, password.length()
               - AuthenticationConstants.YUBIKEY_USER_MARKER.length());
-      if (isValidYubikeyUser(username, hpwd) || isValidMobileUser(username, password)) {
+      if (isValidYubikeyUser(username, hpwd)) {
         groups = findGroups(username);
         groups = addAssignGroups(groups);
         setGroupNames(username, groups);
       } 
-    }
+    } else if (isValidMobileUser(username, password)) {
+      _logger.log(Level.INFO, "Validated mobile login for: {0}", username);
+      groups = findGroups(username);
+      groups = addAssignGroups(groups);
+      setGroupNames(username, groups);
+    } 
+
     return groups;
   }
 
@@ -359,7 +370,7 @@ public class CustomAuthRealm extends AppservRealm {
 
     final String dsJndi = this.getProperty(PARAM_DATASOURCE_JNDI);
     try {
-      String nonTxJndiName = dsJndi + "__nontx";
+//      String nonTxJndiName = dsJndi + "__nontx";
       /*
        * InitialContext ic = new InitialContext();
        * final DataSource dataSource =
