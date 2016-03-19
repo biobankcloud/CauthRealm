@@ -421,7 +421,7 @@ public class CustomAuthRealm extends AppservRealm {
       if (!rs.first()) {
         return valid;
       }
-      if (rs.getInt("status") != PeopleAccountStatus.ACCOUNT_ACTIVEATED.
+      if (rs.getInt("status") != PeopleAccountStatus.ACTIVATED_ACCOUNT.
               getValue()) {
         return valid;
       }
@@ -591,16 +591,16 @@ public class CustomAuthRealm extends AppservRealm {
           
           valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
                   0, 12), otpCode.substring(split))
-                  && (status == PeopleAccountStatus.ACCOUNT_ACTIVEATED.
+                  && (status == PeopleAccountStatus.ACTIVATED_ACCOUNT.
                   getValue()
-                  || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
+                  || (status == PeopleAccountStatus.BLOCKED_ACCOUNT.getValue()));
         } else {
 
           valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
                   0, 12), otpCode.substring(split))
-                  && (status == PeopleAccountStatus.ACCOUNT_ACTIVEATED.
+                  && (status == PeopleAccountStatus.BLOCKED_ACCOUNT.
                   getValue()
-                  || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
+                  || (status == PeopleAccountStatus.BLOCKED_ACCOUNT.getValue()));
         }
       }
     } catch (SQLException ex) {
@@ -682,9 +682,9 @@ public class CustomAuthRealm extends AppservRealm {
             valid = pwd.equalsIgnoreCase(hpwd)
                     && verifyCode(otp, Integer.parseInt(otpCode), getTimeIndex(),
                             5)
-                    && ((status == PeopleAccountStatus.ACCOUNT_ACTIVEATED.
+                    && ((status == PeopleAccountStatus.ACTIVATED_ACCOUNT.
                     getValue())
-                    || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
+                    || (status == PeopleAccountStatus.BLOCKED_ACCOUNT.getValue()));
           }
         } else {
           // for only normal password
@@ -694,9 +694,9 @@ public class CustomAuthRealm extends AppservRealm {
             valid = pwd.equalsIgnoreCase(hpwd)
                     && verifyCode(otp, Integer.parseInt(otpCode.trim()),
                             getTimeIndex(), 5)
-                    && ((status == PeopleAccountStatus.ACCOUNT_ACTIVEATED.
+                    && ((status == PeopleAccountStatus.ACTIVATED_ACCOUNT.
                     getValue())
-                    || (status == PeopleAccountStatus.ACCOUNT_PENDING.getValue()));
+                    || (status == PeopleAccountStatus.BLOCKED_ACCOUNT.getValue()));
           }
         }
       }
