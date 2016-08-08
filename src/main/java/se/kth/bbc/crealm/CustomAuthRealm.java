@@ -86,7 +86,6 @@ public class CustomAuthRealm extends AppservRealm {
   public static final String PARAM_PASSWORD_COLUMN = "password-column";
   public static final String PARAM_OTP_COLUMN = "otp-secret-column"; // for the one time password
   public static final String PARAM_TWO_FACTOR_COLUMN = "two-factor-column";
-  public static final String PARAM_TWO_FACTOR_EXCLUDES_GROUPS = "two-factor-excluded-groups";
   public static final String PARAM_GROUP_TABLE = "group-table";
   public static final String PARAM_GROUP_NAME_COLUMN = "group-name-column";
   public static final String PARAM_GROUP_TABLE_USER_NAME_COLUMN
@@ -120,9 +119,9 @@ public class CustomAuthRealm extends AppservRealm {
   private String groupQuery = null;
   private String yubikeyUpdateQuery = null;
   private String selectYubikey = null;
-  private String[] twoFactorExcludedGroupList = null;
 
   private String selectAuthMethod = null;
+  private String selectTwoFactorExcludes = null;
 
   private MessageDigest md = null;
   Properties prop = null;
@@ -155,7 +154,6 @@ public class CustomAuthRealm extends AppservRealm {
     String passwordColumn = props.getProperty(PARAM_PASSWORD_COLUMN);
     String otpColumn = props.getProperty(PARAM_OTP_COLUMN);
     String twoFactorColumn = props.getProperty(PARAM_TWO_FACTOR_COLUMN);
-    String twoFactorExcludes = props.getProperty(PARAM_TWO_FACTOR_EXCLUDES_GROUPS);
     String groupTable = props.getProperty(PARAM_GROUP_TABLE);
     String groupNameColumn = props.getProperty(PARAM_GROUP_NAME_COLUMN);
     String groupTableUserNameColumn = props.getProperty(
@@ -245,8 +243,8 @@ public class CustomAuthRealm extends AppservRealm {
     selectAuthMethod = "SELECT value FROM " + variablesTable
             + " WHERE id = 'twofactor_auth'";
 
-    twoFactorExcludedGroupList = (twoFactorExcludes != null? twoFactorExcludes.split(
-            ";") : null);
+    selectTwoFactorExcludes = "SELECT value FROM " + variablesTable
+            + " WHERE id = 'twofactor-excluded-groups'";
     
     if (!NONE.equalsIgnoreCase(digestAlgorithm)) {
       try {
@@ -652,6 +650,7 @@ public class CustomAuthRealm extends AppservRealm {
 
     boolean valid = false;
     String mode = "false";
+    String excludeList = "";
     
     try {
 
@@ -675,7 +674,6 @@ public class CustomAuthRealm extends AppservRealm {
         String otp = rs.getString(2);
         int status = Integer.parseInt(rs.getString(3));
         boolean twoFactorEnabled = rs.getBoolean(4);
-        boolean exclude = isInExcludeList(user);
 
         rs.close();
         statement.close();
@@ -688,7 +686,20 @@ public class CustomAuthRealm extends AppservRealm {
         if (rs.next()) {
           mode = rs.getString(1);
         }
+        
+        rs.close();
+        statement.close();
+        
+        statement = connection.prepareStatement(selectTwoFactorExcludes);
+        rs = statement.executeQuery();
 
+        if (rs.next()) {
+          excludeList = rs.getString(1);
+        }
+        String[] excludedGroupList = (excludeList != null? excludeList.split(
+            ";") : null);
+        boolean exclude = isInExcludeList(user, excludedGroupList);
+        
         if (HEX.equalsIgnoreCase(getProperty(PARAM_ENCODING))) {
           // for only normal password
           if (exclude) {
@@ -926,16 +937,15 @@ public class CustomAuthRealm extends AppservRealm {
 
   }
 
-  private boolean isInExcludeList(String user) {
-    if (twoFactorExcludedGroupList == null || 
-        twoFactorExcludedGroupList.length == 0){
+  private boolean isInExcludeList(String user, String[] excludedGroupList) {
+    if (excludedGroupList == null || excludedGroupList.length == 0){
       return false;
     }
     String[] userGroups = findGroups(user);
     if (userGroups == null || userGroups.length == 0) {
       return false;
     }
-    for (String twoFactorExclude : twoFactorExcludedGroupList) {
+    for (String twoFactorExclude : excludedGroupList) {
       for (String group : userGroups) {
         if (group.equals(twoFactorExclude)) {
           return true;
