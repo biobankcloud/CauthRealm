@@ -1,4 +1,4 @@
-package se.kth.bbc.crealm;
+package io.hops.crealm;
 
 import com.sun.appserv.connectors.internal.api.ConnectorRuntime;
 import com.sun.appserv.security.AppservRealm;
@@ -34,7 +34,6 @@ import java.util.Properties;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.naming.NamingException;
@@ -421,10 +420,6 @@ public class CustomAuthRealm extends AppservRealm {
       if (!rs.first()) {
         return valid;
       }
-      if (rs.getInt("status") != PeopleAccountStatus.ACTIVATED_ACCOUNT.
-              getValue()) {
-        return valid;
-      }
       
       String secret = rs.getString("aes_secret");
 
@@ -584,28 +579,16 @@ public class CustomAuthRealm extends AppservRealm {
       if (rs.next()) {
         // Get the user's credentials
         pwd = rs.getString(1);
-        int status = Integer.parseInt(rs.getString(3));
 
         if (HEX.equalsIgnoreCase(getProperty(PARAM_ENCODING))) {
-          // for only normal password
-          
-          valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
-                  0, 12), otpCode.substring(split))
-                  && (status == PeopleAccountStatus.ACTIVATED_ACCOUNT.
-                  getValue()
-                  || (status == PeopleAccountStatus.BLOCKED_ACCOUNT.getValue()));
+          // for only normal password          
+          valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(0, 12), otpCode.substring(split));                 
         } else {
-
-          valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(
-                  0, 12), otpCode.substring(split))
-                  && (status == PeopleAccountStatus.BLOCKED_ACCOUNT.
-                  getValue()
-                  || (status == PeopleAccountStatus.BLOCKED_ACCOUNT.getValue()));
+          valid = pwd.equalsIgnoreCase(hpwd) && validateOTP(otpCode.substring(0, 12), otpCode.substring(split));
         }
       }
     } catch (SQLException ex) {
-      _logger.log(Level.SEVERE, "CAuth realm invalid Yubikey user step 5",
-              new String[]{user, ex.toString()});
+      _logger.log(Level.SEVERE, "CAuth realm invalid Yubikey user step 5", new String[]{user, ex.toString()});
       if (_logger.isLoggable(Level.FINE)) {
         _logger.log(Level.FINE, "Cannot validate Yubkiey user", ex);
       }
@@ -660,7 +643,6 @@ public class CustomAuthRealm extends AppservRealm {
         // Get the user's credentials
         pwd = rs.getString(1);
         String otp = rs.getString(2);
-        int status = Integer.parseInt(rs.getString(3));
 
         rs.close();
         statement.close();
@@ -679,39 +661,26 @@ public class CustomAuthRealm extends AppservRealm {
           if (mode.equals("false")) {
             valid = pwd.equalsIgnoreCase(hpwd);
           } else {
-            valid = pwd.equalsIgnoreCase(hpwd)
-                    && verifyCode(otp, Integer.parseInt(otpCode), getTimeIndex(),
-                            5)
-                    && ((status == PeopleAccountStatus.ACTIVATED_ACCOUNT.
-                    getValue())
-                    || (status == PeopleAccountStatus.BLOCKED_ACCOUNT.getValue()));
+            valid = pwd.equalsIgnoreCase(hpwd) && verifyCode(otp, Integer.parseInt(otpCode), getTimeIndex(), 5);
           }
         } else {
           // for only normal password
           if (mode.equals("false")) {
             valid = pwd.equalsIgnoreCase(hpwd);
           } else {
-            valid = pwd.equalsIgnoreCase(hpwd)
-                    && verifyCode(otp, Integer.parseInt(otpCode.trim()),
-                            getTimeIndex(), 5)
-                    && ((status == PeopleAccountStatus.ACTIVATED_ACCOUNT.
-                    getValue())
-                    || (status == PeopleAccountStatus.BLOCKED_ACCOUNT.getValue()));
+            valid = pwd.equalsIgnoreCase(hpwd) && verifyCode(otp, Integer.parseInt(otpCode.trim()), getTimeIndex(), 5);
           }
         }
       }
     } catch (SQLException ex) {
-      _logger.log(Level.SEVERE, "CAuth realm invalid user reason: mobile",
-              new String[]{user, ex.toString()});
+      _logger.log(Level.SEVERE, "CAuth realm invalid user reason: mobile", new String[]{user, ex.toString()});
       if (_logger.isLoggable(Level.FINE)) {
         _logger.log(Level.FINE, "Cannot validate mobile user", ex);
       }
       return false;
     } catch (CharacterCodingException | LoginException | NumberFormatException |
             NoSuchAlgorithmException | InvalidKeyException ex) {
-      _logger.log(Level.SEVERE,
-              "CAuth realm mobile user char encoding or authentication mode is set wrong.",
-              user);
+      _logger.log(Level.SEVERE, "CAuth realm mobile user char encoding or authentication mode is set wrong.", user);
       if (_logger.isLoggable(Level.FINE)) {
         _logger.log(Level.FINE, "Cannot validate mobile user", ex);
       }
