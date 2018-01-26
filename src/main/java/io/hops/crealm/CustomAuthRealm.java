@@ -84,6 +84,7 @@ public class CustomAuthRealm extends AppservRealm {
   public static final String PARAM_USER_NAME_COLUMN = "user-name-column";
   public static final String PARAM_PASSWORD_COLUMN = "password-column";
   public static final String PARAM_OTP_COLUMN = "otp-secret-column"; // for the one time password
+  public static final String PARAM_TWO_FACTOR_COLUMN = "two-factor-column";
   public static final String PARAM_GROUP_TABLE = "group-table";
   public static final String PARAM_GROUP_NAME_COLUMN = "group-name-column";
   public static final String PARAM_GROUP_TABLE_USER_NAME_COLUMN
@@ -119,6 +120,7 @@ public class CustomAuthRealm extends AppservRealm {
   private String selectYubikey = null;
 
   private String selectAuthMethod = null;
+  private String selectTwoFactorExcludes = null;
 
   private MessageDigest md = null;
   Properties prop = null;
@@ -150,6 +152,7 @@ public class CustomAuthRealm extends AppservRealm {
     String userNameColumn = props.getProperty(PARAM_USER_NAME_COLUMN);
     String passwordColumn = props.getProperty(PARAM_PASSWORD_COLUMN);
     String otpColumn = props.getProperty(PARAM_OTP_COLUMN);
+    String twoFactorColumn = props.getProperty(PARAM_TWO_FACTOR_COLUMN);
     String groupTable = props.getProperty(PARAM_GROUP_TABLE);
     String groupNameColumn = props.getProperty(PARAM_GROUP_NAME_COLUMN);
     String groupTableUserNameColumn = props.getProperty(
@@ -217,9 +220,13 @@ public class CustomAuthRealm extends AppservRealm {
     if (yubikeyTable == null) {
       yubikeyTable = "yubikey";
     }
+    if (twoFactorColumn == null) {
+      String msg = sm.getString("realm. missing prop", PARAM_TWO_FACTOR_COLUMN, "CustomAuthRealm");
+      throw new BadRealmException(msg);
+    }
 
     passwordQuery = "SELECT " + passwordColumn + " , " + otpColumn + " , "
-            + userActiveColumn + " FROM " + userTable
+            + userActiveColumn + "," + twoFactorColumn + " FROM " + userTable
             + " WHERE " + userNameColumn + " = ?";
 
     groupQuery = "SELECT " + groupNameColumn + " FROM " + groupTable
@@ -234,6 +241,9 @@ public class CustomAuthRealm extends AppservRealm {
     selectAuthMethod = "SELECT value FROM " + variablesTable
             + " WHERE id = 'twofactor_auth'";
 
+    selectTwoFactorExcludes = "SELECT value FROM " + variablesTable
+            + " WHERE id = 'twofactor-excluded-groups'";
+    
     if (!NONE.equalsIgnoreCase(digestAlgorithm)) {
       try {
         md = MessageDigest.getInstance(digestAlgorithm);
@@ -622,7 +632,8 @@ public class CustomAuthRealm extends AppservRealm {
 
     boolean valid = false;
     String mode = "false";
-
+    String excludeList = "";
+    
     try {
 
       // Get the original password
@@ -643,6 +654,8 @@ public class CustomAuthRealm extends AppservRealm {
         // Get the user's credentials
         pwd = rs.getString(1);
         String otp = rs.getString(2);
+        //int status = Integer.parseInt(rs.getString(3));
+        boolean twoFactorEnabled = rs.getBoolean(4);
 
         rs.close();
         statement.close();
@@ -655,17 +668,33 @@ public class CustomAuthRealm extends AppservRealm {
         if (rs.next()) {
           mode = rs.getString(1);
         }
+        
+        rs.close();
+        statement.close();
+        
+        statement = connection.prepareStatement(selectTwoFactorExcludes);
+        rs = statement.executeQuery();
 
+        if (rs.next()) {
+          excludeList = rs.getString(1);
+        }
+        String[] excludedGroupList = (excludeList != null? excludeList.split(";") : null);
+        boolean exclude = isInExcludeList(user, excludedGroupList);
+        
         if (HEX.equalsIgnoreCase(getProperty(PARAM_ENCODING))) {
           // for only normal password
-          if (mode.equals("false")) {
+          if (exclude) {
+            valid = pwd.equalsIgnoreCase(hpwd);
+          }else if (!mode.equals("mandatory") && (mode.equals("false") || !twoFactorEnabled)) {
             valid = pwd.equalsIgnoreCase(hpwd);
           } else {
             valid = pwd.equalsIgnoreCase(hpwd) && verifyCode(otp, Integer.parseInt(otpCode), getTimeIndex(), 5);
           }
         } else {
           // for only normal password
-          if (mode.equals("false")) {
+          if (exclude) {
+            valid = pwd.equalsIgnoreCase(hpwd);
+          }else if (!mode.equals("mandatory") && (mode.equals("false") || !twoFactorEnabled)) {
             valid = pwd.equalsIgnoreCase(hpwd);
           } else {
             valid = pwd.equalsIgnoreCase(hpwd) && verifyCode(otp, Integer.parseInt(otpCode.trim()), getTimeIndex(), 5);
@@ -874,5 +903,24 @@ public class CustomAuthRealm extends AppservRealm {
     java.util.Date today = new java.util.Date();
     return new java.sql.Timestamp(today.getTime());
 
+  }
+
+  private boolean isInExcludeList(String user, String[] excludedGroupList) {
+    if (excludedGroupList == null || excludedGroupList.length == 0){
+      return false;
+    }
+    String[] userGroups = findGroups(user);
+    if (userGroups == null || userGroups.length == 0) {
+      return false;
+    }
+    for (String twoFactorExclude : excludedGroupList) {
+      for (String group : userGroups) {
+        if (group.equals(twoFactorExclude)) {
+          return true;
+        }
+      }
+
+    }
+    return false;
   }
 }
