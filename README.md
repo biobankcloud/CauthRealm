@@ -4,7 +4,7 @@ This instructions describes step-by-step guidelines to deploy the custom two-fac
 
 ### Build the Custom Realm:
 
- *  $git clone https://github.com/gholamiali/CauthRealm.git
+ *  $git clone git@github.com:hopshadoop/CauthRealm.git
  *  $cd CauthRealm
  *  $mvn compile
  *  $mvn assembly:assembly
@@ -23,7 +23,7 @@ This instructions describes step-by-step guidelines to deploy the custom two-fac
 
 ```
 cauthRealm{
-        se.kth.bbc.crealm.CustomAuthLoginModule required;
+        io.hops.crealm.CustomAuthLoginModule required;
 };
 
 ```
@@ -37,7 +37,7 @@ cauthRealm{
  <security-service default-realm="cauthRealm">
  	 	...
   
-    <auth-realm name="cauthRealm" classname="se.kth.bbc.crealm.CustomAuthRealm">
+    <auth-realm name="cauthRealm" classname="io.hops.crealm.CustomAuthRealm">
           <property name="jaas-context" value="cauthRealm"></property>
           <property name="encoding" value="Hex"></property>
           <property name="password-column" value="password"></property>
@@ -48,6 +48,7 @@ cauthRealm{
           <property name="group-name-column" value="group_name"></property>
           <property name="user-name-column" value="email"></property>
           <property name="otp-secret-column" value="secret"></property>
+          <property name="two-factor-column" value="two_factor"></property>
           <property name="user-status-column" value="status"></property>
           <property name="group-table-user-name-column" value="email"></property>
           <property name="yubikey-table" value="hopsworks.yubikey"></property>
@@ -60,7 +61,7 @@ cauthRealm{
 
 Otherwise, you can use command line through the Glassfish asadmin console:
 
-asadmin  create-auth-realm --classname se.kth.bbc.crealm.CustomAuthRealm --property "jaas-context=cauthRealm:encoding=Hex:password-column=password:datasource-jndi=jdbc/hopsworks:group-table=hopsworks.users_groups:user-table=hopsworks.users:charset=UTF-8:group-name-column=group_name:user-name-column=email:otp-secret-column=secret:user-status-column=status:group-table-user-name-column=email:yubikey-table=hopsworks.yubikey:variables-table=hopsworks.variables" cauthRealm
+asadmin  create-auth-realm --classname io.hops.crealm.CustomAuthRealm --property "jaas-context=cauthRealm:encoding=Hex:password-column=password:datasource-jndi=jdbc/hopsworks:group-table=hopsworks.users_groups:user-table=hopsworks.users:charset=UTF-8:group-name-column=group_name:user-name-column=email:otp-secret-column=secret:two-factor-column=two_factor:user-status-column=status:group-table-user-name-column=email:yubikey-table=hopsworks.yubikey:variables-table=hopsworks.variables" cauthRealm
 ```
 
 
