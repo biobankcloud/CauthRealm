@@ -1,4 +1,4 @@
-package se.kth.bbc.crealm;
+package io.hops.crealm;
 
 public final class AuthenticationConstants {
   

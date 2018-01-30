@@ -1,4 +1,4 @@
-package se.kth.bbc.crealm;
+package io.hops.crealm;
 
 import com.sun.appserv.security.AppservPasswordLoginModule;
 import java.util.Arrays;
