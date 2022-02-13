@@ -44,6 +44,7 @@ import org.apache.commons.codec.binary.Base32;
 import org.glassfish.hk2.api.ActiveDescriptor;
 import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.utilities.BuilderHelper;
+import org.glassfish.internal.api.Globals;
 
 @Service(name = "CustomAuthRealm")
 public class CustomAuthRealm extends AppservRealm {
@@ -54,6 +55,8 @@ public class CustomAuthRealm extends AppservRealm {
    * and
    * https://weblogs.java.net/blog/evanx/archive/2012/11/07/google-authenticator-thus-enabled
    * and https://code.google.com/p/yubikey-server-j/
+   * - now
+   * https://github.com/payara/Payara/blob/master/appserver/security/core-ee/src/main/java/com/sun/enterprise/security/auth/realm/jdbc/JDBCRealm.java
    */
 
   /*
@@ -125,7 +128,7 @@ public class CustomAuthRealm extends AppservRealm {
   private MessageDigest md = null;
   Properties prop = null;
 
-  private ActiveDescriptor<ConnectorRuntime> cr;
+    private ActiveDescriptor<ConnectorRuntime> connectorRuntimeDescriptor;
 
   @Override
   public String getAuthType() {
@@ -174,9 +177,14 @@ public class CustomAuthRealm extends AppservRealm {
      * String yubikeySessionCounter =
      * props.getProperty(PARAM_YUBIKEY_COUNTER_COLUMN);
      */
-    cr = (ActiveDescriptor<ConnectorRuntime>) Util.getDefaultHabitat().
-            getBestDescriptor(BuilderHelper.createContractFilter(
-                            ConnectorRuntime.class.getName()));
+
+    // TODO - use org.glassfish.hk2.utilities.ActiveDescriptorBuilder.buildFactory()
+    // https://javaee.github.io/hk2/apidocs/index.html?deprecated-list.html
+
+    connectorRuntimeDescriptor = getConnectorRuntimeDescriptor();    
+    //    cr = (ActiveDescriptor<ConnectorRuntime>) Util.getDefaultHabitat().
+    //              getBestDescriptor(BuilderHelper.createContractFilter(
+    //                              ConnectorRuntime.class.getName()));
 
     if (jaasCtx == null) {
       String msg = sm.getString(
@@ -281,6 +289,12 @@ public class CustomAuthRealm extends AppservRealm {
 
   }
 
+  @SuppressWarnings("unchecked")
+  private ActiveDescriptor<ConnectorRuntime> getConnectorRuntimeDescriptor() {
+      return (ActiveDescriptor<ConnectorRuntime>) Globals.getStaticHabitat()
+              .getBestDescriptor(BuilderHelper.createContractFilter(ConnectorRuntime.class.getName()));
+  }
+    
   @Override
   public Enumeration getGroupNames(String username)
           throws InvalidOperationException, NoSuchUserException {
@@ -388,8 +402,11 @@ public class CustomAuthRealm extends AppservRealm {
        * //replacement code suggested by jagadish
        * (DataSource)ic.lookup(nonTxJndiName);
        */
-      ConnectorRuntime connectorRuntime = Util.getDefaultHabitat().
-              getServiceHandle(cr).getService();
+
+	// TODO: Habitat has been replaced by @Service  https://javaee.github.io/hk2/introduction.html
+	// ConnectorRuntime connectorRuntime = Util.getDefaultHabitat().
+      final ConnectorRuntime connectorRuntime = Globals.getStaticHabitat()
+              .getServiceHandle(connectorRuntimeDescriptor).getService();
       final DataSource dataSource
               = (DataSource) connectorRuntime.lookupNonTxResource(dsJndi, false);
 
